@@ -40,7 +40,7 @@ BoardServiceImpl이나 UserServiceImpl 클래스의 모든 클래스를 조인�
 id 속성으로 포인트컷을 식별하기 위한 유일한 문자열을 선언한다.  
 이 id 가 나중에 포인트컷을 참조할 때 사용된다.   
    
-**중요한 것은 expression 속성인데, **  
+**중요한 것은 expression 속성인데,**  
 이 값을 어떻게 설정하느냐에 따라 필터링되는 메소드가 달라진다.    
 ```
 <aop:pointcut id="getPointcut" expression="execution(* com.springbook.biz..*Impl.get*(..))" />
@@ -52,6 +52,7 @@ get*(..)                : 메소드명 및 매개변수
 
 중간 마다 나오는 점은 각 범위를 구분해주는 구분 점이라고 생각하면 된다.  
 ```
+이제 위의 설정을 기준으로 ```BoardServiceClient```클래스를 실행시켜보겠다.  
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Mon Nov 04 20:02:27 KST 2019]; root of context hierarchy
@@ -65,7 +66,6 @@ INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostP
 ---> BoardVO [seq=2, title=임시 제목, writer=홍길동, content=임시 내용.........., regDate=2019-11-01, cnt=0]
 ---> BoardVO [seq=1, title=가입인사, writer=관리자, content=잘 부탁드립니다..., regDate=2019-10-27, cnt=0]
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Mon Nov 04 20:02:27 KST 2019]; root of context hierarchy
-
 ```
   
 
