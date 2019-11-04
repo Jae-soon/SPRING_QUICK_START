@@ -189,6 +189,12 @@ AOP 설정에서 ```<aop:config>```는 루트 엘리먼트이다.
 ```<aop:pointcut>```은 여러 개 정의할 수 있으며,  
 유일한 아이디를 할당하여 애스팩트를 설정할 때 포인트컷을 참조하는 용도로 사용한다.  
 
+![KakaoTalk_20191104_225744621](https://user-images.githubusercontent.com/50267433/68126197-96930a80-ff56-11e9-9faa-c17e6b252f5d.jpg)
+  
+allPointcut이라는 포인트컷은 com.springbook.biz 패키지로 시작하는 클래스 중에서   
+이름이 Impl로 끝나는 클래스의 모든 메소드를 포인트컷으로 설정하고 있다.   
+  
+그리고 애스팩트 설정에서 ```<aop:before>``` 엘리먼트의 pointcut-ref 속성으로 포인트컷을 참조하고 있다.    
 
 ### 2.1.1. 내용1
 ```
