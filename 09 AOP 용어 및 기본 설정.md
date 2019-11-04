@@ -67,20 +67,110 @@ INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostP
 ---> BoardVO [seq=1, title=가입인사, writer=관리자, content=잘 부탁드립니다..., regDate=2019-10-27, cnt=0]
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Mon Nov 04 20:02:27 KST 2019]; root of context hierarchy
 ```
+**결론**    
+클래스마다 사용되는 공통기능인 횡단관심에서도  
+어떠한 클래스에서는 특정메소드를 사용하지 않을 경우가 있다.  
+그럴 경우 포인트컷을 이용하여 사용하려는 메소드만을 정의시켜서 사용하게 끔 하는 것이다.  
+즉, 불필요한 메소드의 호출을 방지하고자 사용하는 것이다.    
+(클래스를 직접 실행시켜보면 우선 Impl내의 모든 메소드에 반응은 하지만 실질적으로 호출하지는 않는다.)     
+       
+## 1.3. 어드바이스
+어드바이스는 횡단 관심에 해당하는 공통 기능의 코드를 의미하며, 독립된 클래스와 메소드로 작성된다.       
+그리고 어드바이스로 구현된 메소드가 언제 동작할지 스프링 설정 파일을 통해서 지정할 수 있다.       
   
+예를 들면 트랜잭션 관리 기능의 어드바이스 메소드가 있다고 가정시에  
+이 메소드들은 비즈니스 로직 수행 후에 트랜잭션 커밋 또는 롤백을 처리하는 것이 가장 이상적이다.   
+(이전에 한다면 아무런 의미없이 동작하는 것이기에 이러한 언제 동작할지를 지정하는 것이 중요하다.)   
+   
+**핵심**   
+스프링에서는 어드바이스의 동작 시점을 5가지로 구분할 수 있다.    
+```
+before			 : 비즈니스 메소드 실행 전에 동작
+after 		 	 : 비즈니스 메소드 실행 후에 동작
 
-### 1.1.1. 내용1
+after-returning		 : 비즈니스 메소드 실행 후에 동작
+after-throwing		 : 비즈니스 메소드 실행 후에 동작
+around			 : 비즈니스 메소드 실행 후에 동작	
 ```
-내용1
+기존의 ```applicationContext.xml```에서 ```before -> after```로 바꾸자
 ```
-## 1.2. 소 주제
-### 1.2.1. 내용1
+	<context:component-scan base-package="com.springbook.biz"></context:component-scan>
+	
+	<bean id="log" class="com.springbook.biz.common.Log4jAdvice"></bean>
+	<aop:config>
+		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.*(..))" id="allPointcut"/>
+		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.get*(..))" id="getPointcut"/>
+		
+		<aop:aspect ref="log">
+			<aop:after pointcut-ref="getPointcut" method="printLogging"/>
+		</aop:aspect>
+	</aop:config>
 ```
-내용1
+**결과**
 ```
+INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Mon Nov 04 20:23:00 KST 2019]; root of context hierarchy
+INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
+===> JDBC로 insertBoard() 기능 처리
+===> JDBC로 getBoardList()기능 처리
+[공통 로그-Log4j] 비즈니스 로직 수행 전 동작
+---> BoardVO [seq=6, title=임시 제목, writer=홍길동, content=임시 내용.........., regDate=2019-11-04, cnt=0]
+---> BoardVO [seq=5, title=임시 제목, writer=홍길동, content=임시 내용.........., regDate=2019-11-04, cnt=0]
+---> BoardVO [seq=4, title=임시 제목, writer=홍길동, content=임시 내용.........., regDate=2019-11-02, cnt=0]
+---> BoardVO [seq=3, title=임시 제목, writer=홍길동, content=임시 내용.........., regDate=2019-11-02, cnt=0]
+---> BoardVO [seq=2, title=임시 제목, writer=홍길동, content=임시 내용.........., regDate=2019-11-01, cnt=0]
+---> BoardVO [seq=1, title=가입인사, writer=관리자, content=잘 부탁드립니다..., regDate=2019-10-27, cnt=0]
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Mon Nov 04 20:23:00 KST 2019]; root of context hierarchy
+```
+```[공통 로그-Log4j] 비즈니스 로직 수행 전 동작``` 의 위치가 바뀐 것을 알 수가 있다.      
+after가 되었으니 해당 메소드를 호출한 후에 출력이 되는 것이다.     
+   
+## 1.4. 위빙
+위빙은 포인트컷으로 지정한 핵심 관심 메소드가 호출될 때,  
+어드바이스에 해당하는 **횡단 관심 메소드가 삽입되는 과정**을 의미한다.    
+  
+이 위빙을 통해서 비즈니스 메소드를 수정하지 않고도 횡단 관심에 해당하는 기능을 추가하거나 변경할 수 있다.  
+  
+**위빙을 처리하는 방식**    
+  
+* 컴파일타임 위빙  
+* 로딩타임 위빙  
+* 런타임 위빙   
+  
+스프링에서는 **런타임 위빙만을 지원한다.**  
+
+## 1.5. 애스팩트 또는 어드바이저   
+AOP의 핵심은 바로 애스팩트이다.  
+애스팩트는 포인트컷과 어드바이스의 결합으로서,  
+어떤 포인트컷 메소드에 대해서 어떤 어드바이스 메소드를 실행할지 결정한다.   
+**이 애스팩트 설정에 따라 AOP의 동작 방식이 결정되므로 AOP 용어 중 가장 중요한 개념이라 할 수 있다.**     
+![KakaoTalk_20191104_222611620](https://user-images.githubusercontent.com/50267433/68124258-45811780-ff52-11e9-8f52-6cc5e9771a8e.jpg)
+
+  
+1. getPointcut 포인트컷이 호출될 때(포인트컷 메소드 expression->get*인 메소드들)    
+2. log 라는 어드바이스 객체의  
+3. method="printLog" 즉 printLog가 실행되고  
+4. 메소드 동작 시점이 before 즉 포인트컷이 실행되기 이전에 printLog()가 실행된다.   
+  
+애스팩트를 설정할 때는 ```<aop:aspect>``` 엘리먼트를 사용하는데,  
+가끔 ```<aop:aspect>```대신에 ```<aop:advisor>```를 사용하는 경우가 있다.   
+대표적인 상황이 트랜잭션 설정에서 사용한다.   
+  
+종합하자면 애스팩트와 어드바이저가 같은 의미의 용어를 나타내는 것이다.   
+  
+## 1.6. AOP 용어 종합
+
+![KakaoTalk_20191104_223639173](https://user-images.githubusercontent.com/50267433/68124857-a65d1f80-ff53-11e9-8e77-33fd360a2bb6.jpg)
+
+1. 사용자는 시스템을 사용하면서 자연스럽게 비즈니스 컴포넌트의 여러 조인포인트를 호출하게 된다.   
+2. 이때 특정 포인트컷으로 지정한 메소드가 호출되는 순간,  
+3. 어드바이스 객체의 어드바이스 메소드가 호출된다.  
+4. 이 어드바이스 메소드의 동작 시점을 5가지로 지정할 수 있으며,  
+5. 포인트컷으로 지정한 메소드가 호출될때, 어드바이스 메소드를 삽입하도록 하는 설정을 애스팩트라고 한다.  
+6. 이 애스팩트 설정에 따라 위빙이 처리된다.  
 
 ***
-# 2. 대주제
+# 2. AOP 엘리먼트
 > 인용
 ## 2.1. 소 주제
 ### 2.1.1. 내용1
