@@ -183,7 +183,63 @@ After Throwing 어드바이스 메소드에 JoinPoint만 선언되어 있다면 
 		</aop:aspect>
 	</aop:config>
 ```
-       
+위의 설정은 비즈니스 메소드에서 발생한 예외 객체를 exceptObj 라는 바인드 변수에 바인드하라는 설정이다.  
+```
+<aop:after-throwing pointcut-ref="allPointcut" method="execeptionLog" throwing="exceptObj"/>
+```
+에서의 throwing 속성은 ```<aop:after-throwing>```에서만 사용할 수 있는 속성이며     
+**속성값은 어드바이스 메소드 매개변수로 선언된 바인드 변수 이름과 같아야 한다.**     
+  
+예외 발생시 동작하므로 코드를 살짝 수정해주자 
+```
+package com.springbook.biz.board.impl;
 
+import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.common.Log4jAdvice;
+import com.springbook.biz.common.LogAdvice;
+
+@Service("boardService")
+public class BoardServiceImpl implements BoardService {
+	@Autowired
+	private BoardDAO boardDAO;
+
+	@Override
+	public void insertBoard(BoardVO vo) {
+		if (vo.getSeq() == 0) {
+			throw new IllegalArgumentException("0번 글은 등록할 수 없습니다.");
+		}
+		boardDAO.insertBoard(vo);
+	}
+
+	@Override
+	public void updateBoard(BoardVO vo) {
+		boardDAO.updateBoard(vo);
+	}
+
+	@Override
+	public void deleteBoard(BoardVO vo) {
+		boardDAO.deleteBoard(vo);
+	}
+
+	@Override
+	public BoardVO getBoard(BoardVO vo) {
+		return boardDAO.getBoard(vo);
+	}
+
+	@Override
+	public List<BoardVO> getBoardList(BoardVO vo) {
+		return boardDAO.getBoardList(vo);
+	}
+
+}
+```
+프로그램을 실행하면 AfterThrowingAdvice 객체의  
+exceptionLog() 메소드에서 발생한 예외 객체의 메시지를 출력하고 있는 것을 확인할 수 있다.
+   
+exceptionLog() 메소드를 구현할 때, 발생하는 예외 객체의 종류에 따라 다음처럼 다양하게 예외 처리를 할 수 있다.  
 
