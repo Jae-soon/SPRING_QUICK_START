@@ -123,7 +123,7 @@ INFO : org.springframework.context.support.GenericXmlApplicationContext - Closin
 객체 삭제 전에 처리할 로직 처리...
 ```  
    
-## 3.2. p 네임스페이스 사용하기   
+## 1.2. p 네임스페이스 사용하기   
 Setter 인젝션을 설정할 때, 'p 네임스페이스'를 이용하면 좀 더 효율적으로 의존성 주입을 처리할 수 있다.          
 ```p 네임스페이스```는 네임스페이스에 대한 별도의 schemaLocation이 없다.         
 따라서 네임스페이스만 적절히 선언하고 사용할 수 있다.        
@@ -182,5 +182,307 @@ Setter 인젝션을 설정할 때, 'p 네임스페이스'를 이용하면 좀 �
 이클립스에서는 STS를 활용하여 생성한 빈 클래스에서 Setter 메소드를 찾도록 만들었다.   
 즉, 내가 bean에 ```setDisplay()```를 정의하면 ```p:```만 입력해도 자동 입력창에  
 ```p:display-ref=""``` 와 ```p:display=""``` 이 생기는 것이다.  
-   
-   
+
+***
+# 2 컬렉션 객체 설정  
+프로그램을 개발하다 보면 데이터를 저장하는 자료구조 즉, 컬렉션 객체를 이용하는 경우가 많다.     
+이때 컬렉션 객체를 의존성 주입하면 되는데, (매개변수로 컬렉션 객체를 넣어주는 것을 말한다.)    
+스프링에서는 이를 위해 컬렉션 매핑과 관련된 엘리먼트를 지원한다. (xml에서 사용 가능한 컬렉션 태그를 의미)      
+  
+![KakaoTalk_20191029_122509599](https://user-images.githubusercontent.com/50267433/67735413-670c6b80-fa47-11e9-8bfd-ac5d64ebca2f.jpg)
+  
+setter 메소드를 지정하고 값을 넘겨주기 위해 사용하는   
+```<property></property>``` 사이에 컬렉션에 알맞는 태그를 넣는다.  
+```
+java.util.List, array   :	<list><value></value></list>
+java.util.Set		:	<set value-type="java.lang.String"><value></value></set>
+java.util.Map		:	<map><entry><key><value></value></key><value></value></entry></map>
+java.util.Properties	:	<props><prop key="키값"></prop></props>
+```
+
+## 2.1. List 타입 맵핑
+배열 객체나 ```java.util.List``` 타입의 컬렉션 객체는 ```<list>``` 태그를 사용하여 설정한다.     
+**CollectionBean**    
+```
+package com.springbook.ioc.injection;
+
+import java.util.List;
+
+public class CollectionBean {
+	private List<String> addressList;
+
+	public void setAddressList(List<String> addressList) {
+		this.addressList = addressList;
+	}
+
+	public List<String> getAddressList() {
+		return addressList;
+	}
+
+}
+```
+**applicationContext.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	<bean id="collectionBean" class="com.springbook.ioc.injection.CollectionBean" 
+		<property name="addressList">
+			<list>
+				<value>서울시 강남구 역삼동</value>
+				<value>서울시 성동구 행당동</value>
+			</list>
+		</property>
+	</bean>		
+</beans>
+```  
+메소드를 호출할 때 인자로 전달될 리스트와 그 요소를 정의한 것이다.    
+       
+**CollectionBeanClient(확인 코드)**     
+```
+package com.springbook.ioc.injection;
+
+import java.util.List;
+
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
+
+public class CollectionBeanClient {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		AbstractApplicationContext factory = 
+				new GenericXmlApplicationContext("applicationContext.xml");
+		
+		CollectionBean bean = (CollectionBean) factory.getBean("collectionBean");
+		List<String> addressList = bean.getAddressList();
+		for (String address : addressList) {
+			System.out.println(address.toString());
+		}
+		factory.close();
+	}
+}
+```
+## 2.2. Set 타입 매핑
+**중복 값을 허용하지 않는 집합 객체**를 사용할 때는 ```java.util.Set```이라는 컬렉션을 사용한다.    
+    
+**CollectionBean**
+```
+package com.springbook.ioc.injection;
+
+import java.util.Set;
+
+public class CollectionBean{
+	private Set<String> addressList;
+	
+	public void setAddressList(Set<String> addressList){
+		this.addressList = addressList;
+	}
+	
+	public Set<String> getAddressList() {
+		return addressList;
+	}
+}
+```
+**applicationContext.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 클래스 지정시에 bean 태그를 사용한다. -->
+	<bean id="collectionBean"
+		class="com.springbook.ioc.injection.CollectionBean">
+		<property name="addressList">
+			<set value-type="java.lang.String">
+				<value>서울시 강남구 역삼동</value>
+				<value>서울시 성동구 성수동</value>
+				<value>서울시 성동구 성수동</value>
+			</set>
+		</property>
+	</bean>
+</beans>
+```
+**CollectionBeanClient(확인 코드)**     
+```
+package com.springbook.ioc.injection;
+
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
+
+public class CollectionBeanClient {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		AbstractApplicationContext factory = 
+				new GenericXmlApplicationContext("applicationContext.xml");
+		
+		CollectionBean bean = (CollectionBean) factory.getBean("collectionBean");
+		Set<String> addressList = bean.getAddressList();
+		for (String address : addressList) {
+			System.out.println(address.toString());
+		}
+		factory.close();
+	}
+}
+```
+위 설정을 보면 "서울시 성동구 성수동"이라는 주소가 두 번 등록된 것을 확인할 수 있다.  
+그러나 Set 컬렉션은 같은 데이터를 중복해서 저장하지 않으므로 실제 실행해보면   
+"서울시 성동구 성수동"이라는 주소는 하나만 저장된다.   
+  
+## 2.3. Map 타입 매핑
+특정 Key로 데이터를 등록하고 사용할 때는 java.uti.Map 컬렉션을 사용하며, ```<map>```태그를 사용하여 설정할 수 있다.  
+**CollectionBean**
+```
+package com.springbook.ioc.injecion;
+
+public class CollectionBean{
+	private Map<String, String> addressList;
+	
+	public void setAddressList(Map<String,String> addressList){
+		this.addressList = addressList;
+	}
+}
+```
+**applicationContext.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 클래스 지정시에 bean 태그를 사용한다. -->
+	<bean id="collectionBean"
+		class="com.springbook.ioc.injection.CollectionBean">
+		<property name="addressList">
+			<map>
+				<entry>
+					<key>
+						<value>고길동</value>
+					</key>
+					<value>서울시 강남구 역삼동</value>
+				</entry>
+				<entry>
+					<key>
+						<value>마이콜</value>
+					</key>
+					<value>서울시 강서구 화곡동</value>
+				</entry>
+			</map>
+		</property>
+	</bean>
+</beans>
+```
+**CollectionBeanClient**
+```
+package com.springbook.ioc.injection;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
+
+public class CollectionBeanClient {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		AbstractApplicationContext factory = 
+				new GenericXmlApplicationContext("applicationContext.xml");
+		
+		CollectionBean bean = (CollectionBean) factory.getBean("collectionBean");
+		Map<String,String> addressList = bean.getAddressList();
+		for (String address : addressList.keySet()) {
+			System.out.println(address.toString());
+		}
+		factory.close();
+	}
+}
+``` 
+### 2.4. Properties 타입 매핑   
+```key=value``` 형태의 데이터를 등록하고 사용할 때는 java.util.Properties 라는 컬렉션을 사용하며,  
+```<props>``` 엘리먼트를 사용하여 설정한다. 
+**CollectionBean**
+```
+package com.springbook.ioc.injection;
+
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+public class CollectionBean{
+	private Properties addressList;
+	
+	public void setAddressList(Properties addressList){
+		this.addressList = addressList;
+	}
+	
+	public Properties getAddressList() {
+		return addressList;
+	}
+}
+```
+**applicationContext.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<!-- 클래스 지정시에 bean 태그를 사용한다. -->
+	<bean id="collectionBean"
+		class="com.springbook.ioc.injection.CollectionBean">
+		<property name="addressList">
+			<props>
+				<prop key="고길동">서울시 강남구 역삼동</prop>
+				<prop key="마이콜">서울시 강서구 화곡동</prop>
+			</props>
+		</property>
+	</bean>
+</beans>
+```
+**CollectionBeanClient**
+```
+package com.springbook.ioc.injection;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
+
+public class CollectionBeanClient {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		AbstractApplicationContext factory = 
+				new GenericXmlApplicationContext("applicationContext.xml");
+		
+		CollectionBean bean = (CollectionBean) factory.getBean("collectionBean");
+		Properties addressList = bean.getAddressList();
+		
+		System.out.println(addressList);
+		/*
+		for (String address : addressList) {
+			System.out.println(address.toString());
+		}
+		*/
+		factory.close();
+	}
+}
+```
+컬렉션 매핑은 당분간 사용할 일이 없지만    
+이후에 spring MVC 부분을 학습할 때 매우 자주 사용할 것이다.  
