@@ -342,10 +342,3 @@ INFO : org.springframework.context.support.GenericXmlApplicationContext - Closin
 이때, 핵심 관심 메소드와 횡단 관심 메소드 사이에서 소스상의 결합은 발생하지 않으며,    
 이것이 우리가 AOP를 사용하는 주된 목적이다.  
 
- 
-> 인용
-## 3.1. 소 주제
-### 3.1.1. 내용1
-```
-내용1
-```
