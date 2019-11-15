@@ -2,14 +2,17 @@ AOP 용어 및 기본 설정
 =======================
 # 1. AOP 용어 정리  
 ## 1.1. 조인포인트
+**간략히 말하면 AOP가 적용될 수 있는 메소드이다.**   
+   
 조인포인트는 클라이언트가 호출하는 모든 비즈니스 메소드로서,  
-BoardServiceImpl이나 UserServiceImpl 클래스의 모든 클래스를 조인포인트라고 생각하면 된다.    
+BoardServiceImpl이나 UserServiceImpl 클래스의 모든 메소드를 조인포인트라고 생각하면 된다.    
 (인터페이스를 기준으로 해당하는 모든 비즈니스 메소드를 실행하는 중간 역할 클래스)    
   
 조인포인트를 '포인트컷 대상' 또는 '포인트컷 후보'라고도 하는데,  
 이는 조인포인트 중에서 포인트컷이 선택되기 때문이다.  
-  
+    
 ## 1.2. 포인트컷
+**간략히 말하면 AOP가 적용될 수 있는 모든 메소드들에서 지정된 몇개의 메소드를 의미**     
 클라이언트가 호출하는 모든 비즈니스 메소드가 조인포인트라면,  
 포인트컷은 필터링된 조인포인트를 의미한다.       
   
@@ -29,16 +32,18 @@ BoardServiceImpl이나 UserServiceImpl 클래스의 모든 클래스를 조인�
 	<bean id="log" class="com.springbook.biz.common.Log4jAdvice"></bean>
 	<aop:config>
 		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.*(..))" id="allPointcut"/>
-		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.get*(..))" id="getPointcut"/>
-		
+		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.get*(..))" id="getPointcut"/>	
 		<aop:aspect ref="log">
 			<aop:before pointcut-ref="getPointcut" method="printLogging"/>
 		</aop:aspect>
 	</aop:config>
 ```
-포인트컷은 ```<aop:pointcut>```엘리먼트로 선언하며,  
-id 속성으로 포인트컷을 식별하기 위한 유일한 문자열을 선언한다.  
-이 id 가 나중에 포인트컷을 참조할 때 사용된다.   
+```
+		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.*(..))" id="allPointcut"/>
+		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.get*(..))" id="getPointcut"/>	
+```
+포인트컷은 ```<aop:pointcut>```엘리먼트로 선언하며,     
+id 속성으로 포인트컷을 식별하기 위한 유일한 문자열을 선언하며 id 가 나중에 포인트컷을 참조할 때 사용된다.   
    
 **중요한 것은 expression 속성인데,**  
 이 값을 어떻게 설정하느냐에 따라 필터링되는 메소드가 달라진다.    
