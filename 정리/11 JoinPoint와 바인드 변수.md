@@ -347,3 +347,55 @@ Exception in thread "main" java.lang.IllegalArgumentException: 0번 글은 등�
 	at com.sun.proxy.$Proxy11.insertBoard(Unknown Source)
 	at com.springbook.biz.board.impl.BoardServiceClient.main(BoardServiceClient.java:24)
 ```
+위 실습 까지 끝냈으면  ```BoardServiceImpl```의 ```insert()```는 다시 주석처리를 해주어야 한다.
+```
+@Override
+public void insertBoard(BoardVO vo) {
+	/*
+	if (vo.getSeq() == 0) {
+		throw new IllegalArgumentException("0번 글은 등록할 수 없습니다.");
+	}
+	 */
+	boardDAO.insertBoard(vo);
+}
+```
+
+***
+# 5. Around 어드바이스  
+```Around``` 어드바이스는 반드시 ```ProceedingJoinPoint```sms  객체를 매개변수로 받아야한다.     
+```ProceedingJoinPoint```는 ```JoinPoint```를 상속했으며      
+비즈니스 메소드를 호출하는 ```proceed()```메소드를 사용할 수 있다.    
+
+**AroundAdvice**
+```
+package com.springbook.biz.common;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.util.StopWatch;
+
+public class AroundAdvice {
+
+	public Object aroundLog(ProceedingJoinPoint pjp) throws Throwable {
+		String method = pjp.getSignature().getName();
+		
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		
+		Object obj = pjp.proceed();
+		
+		stopWatch.stop();
+		System.out.println(method+"() 메소드 수행에 걸린 시간 : "+stopWatch.getTotalTimeMillis()+"(ms)초");
+		return obj;
+	}
+}
+```
+**결과**
+```
+INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 23:18:56 KST 2019]; root of context hierarchy
+INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
+===> JDBC로 getUser() 기능 처리
+getUser() 메소드 수행에 걸린 시간 : 165(ms)초
+관리자님 환영합니다.
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 23:18:56 KST 2019]; root of context hierarchy
+```
