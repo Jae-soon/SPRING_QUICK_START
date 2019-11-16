@@ -187,12 +187,13 @@ INFO : org.springframework.context.support.GenericXmlApplicationContext - Closin
    
 ***
 # 4. After Throwing 어드바이스  
+After Throwing 은 ```BoardServiceClient```를 사용해서 확인할 것이다.
+   
 After Throwing은 비즈니스 메소드가 수행되다가 예외가 발생할 때 동작하는 어드바이스이다.    
 **따라서 어떤 메소드에서 어떤 예외가 발생했는지를 알아야 한다.     
 그래야 발생한 예외의 종류에 따라 정확한 예외 처리를 구현할 수 있을 것이다.**   
-  
-기존에 작성했던 AfterThrowingAdvice를 수정하여   
-예외가 발생한 메소드 이름과 발생한 예외 객체의 메시지를 출력하도록 수정한다.    
+    
+**AfterThrowingAdvice**  
 ```
 package com.springbook.biz.common;
 
@@ -205,13 +206,15 @@ public class AfterThrowingAdvice {
 	}
 }
 ```  
-exceptionLog() 메소드는 예외가 발생한 메소드 정보를 알아내기 위해서 JoinPoint 객체를 매개변수로 받는다.                
-그리고 After Returning 처럼 비즈니스 메소드에서 발생한 예외 객체를 exceptObj 라는 바인드 변수를 통해 받는다.          
-바인드 변수는 모든 예외 객체를 바인드할 수 있도록 예외 클래스의 최상위 타입인 Exception으로 선언한다.      
-     
-After Throwing 어드바이스 메소드에 JoinPoint만 선언되어 있다면 스프링 설정 파일은 수정하지 않아도 된다.    
-하지만 바인드 변수가 추가됐다면 반드시 바인드 변수에 대한 매핑 설정을 스프링 설정 파일에 추가해야 한다.    
-이때 ```<aop:after-throwing>```엘리먼트의 throwing 속성을 사용한다.  
+```exceptionLog()``` 메소드는 ```JoinPoint``` 객체를 매개변수로 받는다.                  
+그리고 비즈니스 메소드에서 발생한 예외 객체를 ```exceptObj``` 라는 바인드 변수를 통해 받는다.      
+바인드 변수는 모든 예외 객체를 바인드할 수 있도록 예외 클래스의 최상위 타입인 ```Exception```으로 선언한다.        
+       
+어드바이스 메소드에 바인드 변수가 추가됐다면    
+반드시 바인드 변수에 대한 매핑 설정을 스프링 설정 파일에 추가해야 한다.        
+이때 ```<aop:after-throwing>```엘리먼트의 ```throwing=""``` 속성을 사용한다.     
+  
+**applicationContext.xml**  
 ```
 	<context:component-scan base-package="com.springbook.biz"></context:component-scan>
 	<bean id="afterThrowing" class="com.springbook.biz.common.AfterThrowingAdvice"></bean>
@@ -222,14 +225,10 @@ After Throwing 어드바이스 메소드에 JoinPoint만 선언되어 있다면 
 		</aop:aspect>
 	</aop:config>
 ```
-위의 설정은 비즈니스 메소드에서 발생한 예외 객체를 exceptObj 라는 바인드 변수에 바인드하라는 설정이다.  
-```
-<aop:after-throwing pointcut-ref="allPointcut" method="execeptionLog" throwing="exceptObj"/>
-```
-에서의 throwing 속성은 ```<aop:after-throwing>```에서만 사용할 수 있는 속성이며     
+throwing 속성은 ```<aop:after-throwing>```에서만 사용할 수 있는 속성이며     
 **속성값은 어드바이스 메소드 매개변수로 선언된 바인드 변수 이름과 같아야 한다.**     
-  
-예외 발생시 동작하므로 코드를 살짝 수정해주자 
+     
+**BoardServiceImpl-예외상황 발생을 위한 클래스 수정**   
 ```
 package com.springbook.biz.board.impl;
 
@@ -277,8 +276,74 @@ public class BoardServiceImpl implements BoardService {
 
 }
 ```
-프로그램을 실행하면 AfterThrowingAdvice 객체의  
-exceptionLog() 메소드에서 발생한 예외 객체의 메시지를 출력하고 있는 것을 확인할 수 있다.
-   
-exceptionLog() 메소드를 구현할 때, 발생하는 예외 객체의 종류에 따라 다음처럼 다양하게 예외 처리를 할 수 있다.  
+**결과**
+```
+INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 22:52:30 KST 2019]; root of context hierarchy
+INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
+[예외 처리]insertBoard() 메소드 수행 중 발생된 예외 메시지 : 0번 글은 등록할 수 없습니다.
+Exception in thread "main" java.lang.IllegalArgumentException: 0번 글은 등록할 수 없습니다.
+	at com.springbook.biz.board.impl.BoardServiceImpl.insertBoard(BoardServiceImpl.java:20)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.lang.reflect.Method.invoke(Unknown Source)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:302)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:157)
+	at org.springframework.aop.aspectj.AspectJAfterThrowingAdvice.invoke(AspectJAfterThrowingAdvice.java:58)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:92)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:208)
+	at com.sun.proxy.$Proxy11.insertBoard(Unknown Source)
+	at com.springbook.biz.board.impl.BoardServiceClient.main(BoardServiceClient.java:24)
+```
+```AfterThrowingAdvice``` 어드바이스 클래스의 ```execeptionLog()``` 메소드를 구현할 때,     
+발생하는 예외 객체의 종류에 따라 다양하게 예외처리를 진행할 수도 있다.      
+  
+**AfterThrowingAdvice**
+```
+package com.springbook.biz.common;
 
+import org.aspectj.lang.JoinPoint;
+
+public class AfterThrowingAdvice {
+	public void execeptionLog(JoinPoint jp, Exception exceptObj) {
+		String method = jp.getSignature().getName();
+		System.out.println(method + "() 메소드 수행 중 예외 발생!");
+		
+		if(exceptObj instanceof IllegalArgumentException) {
+			System.out.println("부적합한 값이 입력되었습니다.");
+		} else if(exceptObj instanceof NumberFormatException) {
+			System.out.println("숫자 형식의 값이 아닙니다.");
+		} else if(exceptObj instanceof Exception) {
+			System.out.println("문제가 발생했습니다.");
+		}
+	}
+}
+```  
+**결과**
+```
+INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 22:57:25 KST 2019]; root of context hierarchy
+INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
+insertBoard() 메소드 수행 중 예외 발생!
+부적합한 값이 입력되었습니다.
+Exception in thread "main" java.lang.IllegalArgumentException: 0번 글은 등록할 수 없습니다.
+	at com.springbook.biz.board.impl.BoardServiceImpl.insertBoard(BoardServiceImpl.java:20)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.lang.reflect.Method.invoke(Unknown Source)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:302)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:157)
+	at org.springframework.aop.aspectj.AspectJAfterThrowingAdvice.invoke(AspectJAfterThrowingAdvice.java:58)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:92)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:208)
+	at com.sun.proxy.$Proxy11.insertBoard(Unknown Source)
+	at com.springbook.biz.board.impl.BoardServiceClient.main(BoardServiceClient.java:24)
+```
