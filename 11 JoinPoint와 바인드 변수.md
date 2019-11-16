@@ -47,10 +47,12 @@ public class LogAdvice {
    
 ***
 # 2. Before 어드바이스
-Before 어드바이스는 비즈니스 메소드가 실행되기 전에 동작할 로직을 구현한다.  
-따라서 호출된 메소드 시그니처만 알 수 있으면 다양한 사전 처리 로직을 구현할 수 있다.   
-이 때 **어드바이스 메소드의 매개변수로 JoinPoint를 선언한다.**
+**Before 어드바이스는 비즈니스 메소드가 실행되기 전에 동작할 로직을 구현한다.**  
+따라서 호출된 메소드 시그니처만 알 수 있으면 다양한 사전 처리 로직을 구현할 수 있다.     
+   
+**BeforeAdvice**
 ```
+// 어드바이스 클래스 정의
 package com.springbook.biz.common;
 
 import org.aspectj.lang.JoinPoint;
@@ -65,8 +67,7 @@ public class BeforeAdvice {
 }
 ```
 JoinPoint 객체의 getSignature() 메소드를 이용하면, 클라이언트가 호출한 메소드 이름을 출력할 수 있다.    
-그리고 getArgs() 메소드를 통해 인자 목록을 Object 배열로 얻어낼 수 있어서  
-메소드 호출에 어떤 값들을 사용했는지도 알 수 있다.      
+그리고 getArgs() 메소드를 통해 인자 목록을 Object 배열로 얻어낼 수 있어서 메소드 호출에 어떤 값들을 사용했는지도 알 수 있다.      
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 19:28:36 KST 2019]; root of context hierarchy
@@ -242,4 +243,26 @@ public class BoardServiceImpl implements BoardService {
 exceptionLog() 메소드에서 발생한 예외 객체의 메시지를 출력하고 있는 것을 확인할 수 있다.
    
 exceptionLog() 메소드를 구현할 때, 발생하는 예외 객체의 종류에 따라 다음처럼 다양하게 예외 처리를 할 수 있다.  
+```
+INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 21:48:42 KST 2019]; root of context hierarchy
+INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
+[예외 처리]insertBoard() 메소드 수행 중 발생된 예외 메시지 : 0번 글은 등록할 수 없습니다.
+Exception in thread "main" java.lang.IllegalArgumentException: 0번 글은 등록할 수 없습니다.
+	at com.springbook.biz.board.impl.BoardServiceImpl.insertBoard(BoardServiceImpl.java:20)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+	at java.lang.reflect.Method.invoke(Unknown Source)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:302)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:190)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:157)
+	at org.springframework.aop.aspectj.AspectJAfterThrowingAdvice.invoke(AspectJAfterThrowingAdvice.java:58)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:92)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:179)
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:208)
+	at com.sun.proxy.$Proxy11.insertBoard(Unknown Source)
+	at com.springbook.biz.board.impl.BoardServiceClient.main(BoardServiceClient.java:24)
 
+```
