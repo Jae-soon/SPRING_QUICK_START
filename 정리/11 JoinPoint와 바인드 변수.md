@@ -68,25 +68,24 @@ JoinPoint 객체의 ```getSignature()``` 메소드를 이용하면,
 ```getName()``` 메소드를 통해 클라이언트가 호출한 비즈니스 메소드의 이름을 출력할 수 있다.      
    
 그리고 ```getArgs()``` 메소드를 통해 인자로 사용된 객체들을 Object 배열로 얻어낼 수 있어서 이를 처리할 수 있다. 
-위 코드에서는 우리가 앞서 ```UserVO```의 ```toString()``` 메소드를 오버라이딩 한 것을 호출하여 정보를 얻었다.         
+위 코드에서는 우리가 앞서 ```UserVO```의 ```toString()``` 메소드를 오버라이딩 한 것을 호출하여 정보를 얻었다.       
+**결과**
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
-INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 19:28:36 KST 2019]; root of context hierarchy
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 22:33:30 KST 2019]; root of context hierarchy
 INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
-[BEFORE]: 비즈니스 메소드 수행 전에 처리할 내용...
-[사전 처리]getUser() 메소드 ARGS 정보 : UserVO [id=test, password=test123, name=null, rolenull]
+[사전 처리]getUser() 메소드 ARGS 정보 : UserVO [id=test, password=test123, name=null, role=null]
 ===> JDBC로 getUser() 기능 처리
-[AFTER]: 비즈니스 메소드 수행 후에 처리할 내용...
 관리자님 환영합니다.
-INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 19:28:36 KST 2019]; root of context hierarchy
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 22:33:30 KST 2019]; root of context hierarchy
 ```
    
 ***
 # 3. AfterReturning 어드바이스 
 AfterReturning은 비즈니스 메소드가 수행되고 나서, 결과 데이터를 리턴할 때 동작하는 어드바이스이다.       
 **따라서 어떤 메소드가 어떤 값을 리턴했는지를 알아야 사후 처리 기능을 다양하게 구현할 수 있다.**       
-  
-기존에 작성했던 AfterReturningAdvice를 비즈니스 메소드가 리턴한 값을 이용하여 동작하도록 수정한다.  
+    
+**afterReturningLog**  
 ```
 package com.springbook.biz.common;
 
@@ -107,24 +106,24 @@ public class AfterReturningAdvice {
 	}
 }
 ```
-afterReturningLog() 메소드는 클라이언트가 호출한 비즈니스 메소드 정보를 알아내기 위해서            
-JoinPoint 객체를 첫 번째 매개변수로 선언한다.        
-그리고 Object 타입의 변수도 두 번째 매개변수로 선언되어 있는데, 이를 '바인드 변수'라고 한다.         
-       
-바인드 변수는 비즈니스 메소드가 리턴한 결괏값을 바인딩할 목적으로 사용하며,           
-어떤 값이 리턴될지 모르기 때문에 Object 타입으로 선언한다.         
-      
+```afterReturningLog()``` 메소드는 JoinPoint 객체를 첫 번째 매개변수로 선언했다.          
+그리고 Object 타입의 변수도 두 번째 매개변수로 선언되어 있는데, 이를 **바인드 변수**라고 한다.           
+          
+**바인드 변수** :    
+비즈니스 메소드가 리턴한 결괏값을 바인딩할 목적으로 사용하며, 어떤 값이 리턴될지 모르기 때문에 Object 타입으로 선언한다.         
+
 After Returning 어드바이스 메소드에 JoinPoint만 선언되어 있다면 스프링 설정 파일은 수정하지 않아도 된다.       
 하지만 바인드 변수가 추가됐다면 반드시 바인드 변수에 대한 매핑 설정을 스프링 설정 파일에 추가해야 한다.    
    
 이때 ```<aop:after-returning>```엘리먼트의 returning 속성을 사용한다.  
 ```
-	<bean id="afterReturning" class="com.springbook.biz.common.AfterReturningAdvice"></bean>
 	<aop:config>
-		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.*(..))" id="getPointcut"/>
-		<aop:aspect ref="afterReturning">
-			<aop:after-returning pointcut-ref="getPointcut" method="afterReturningLog" returning="returnObj" />
-		</aop:aspect>
+		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.*(..))" id="allPointcut" />
+		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.get*(..))" id="getPointcut" />
+		
+		<aop:aspect ref="afterReturning"> 
+			<aop:after-returning pointcut-ref="getPointcut" method="afterReturningLog" returning="returnObj" /> 
+		</aop:aspect> 
 	</aop:config>
 ```
 위의 설정은 비즈니스 메소드가 리턴한 결괏값을 returnObj라는 바인드 변수에 바인드하라는 설정이다.   
@@ -135,16 +134,13 @@ AfterReturningAdvice의 afterReturningLog() 메소드는 해당 변수를 Object
 
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
-INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 20:14:42 KST 2019]; root of context hierarchy
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 22:31:30 KST 2019]; root of context hierarchy
 INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
-[BEFORE]: 비즈니스 메소드 수행 전에 처리할 내용...
-[사전 처리]getUser() 메소드 ARGS 정보 : UserVO [id=test, password=test123, name=null, rolenull]
 ===> JDBC로 getUser() 기능 처리
 관리자로그인(admin)
-[사후 처리]getUser() 메소드 리턴값 : UserVO [id=test, password=test123, name=관리자, roleAdmin]
-[AFTER]: 비즈니스 메소드 수행 후에 처리할 내용...
+[사후 처리]getUser() 메소드 리턴값 : UserVO [id=test, password=test123, name=관리자, role=Admin]
 관리자님 환영합니다.
-INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 20:14:42 KST 2019]; root of context hierarchy
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 22:31:30 KST 2019]; root of context hierarchy
 ```
    
 ***
