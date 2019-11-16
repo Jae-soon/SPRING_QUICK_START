@@ -8,9 +8,9 @@
 # 1. JoinPoint 인터페이스와 메소드
 ## 1.1. 어드바이스 클래스의 메소드
 ```
-	public void printLog(JoinPoint jp) {
-		System.out.println("[공통 로그] 비즈니스 로직 수행 전 동작");
-	}
+public void printLog(JoinPoint jp) {
+	System.out.println("[공통 로그] 비즈니스 로직 수행 전 동작");
+}
 ```
 어드바이스 메소드에 JoinPoint 인터페이스를 사용하려 한다면 단순히 매개변수에 ```JoinPoint jp```를 기술해주면 된다.    
 **하지만 바로 jp 변수를 사용하는 것이 아니고 jp 변수를 이용해 주제에 맞는 객체를 얻는 것이 우선이다.**
