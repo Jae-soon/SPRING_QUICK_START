@@ -110,12 +110,12 @@ public class AfterReturningAdvice {
 그리고 Object 타입의 변수도 두 번째 매개변수로 선언되어 있는데, 이를 **바인드 변수**라고 한다.           
           
 **바인드 변수** :    
-비즈니스 메소드가 리턴한 결괏값을 바인딩할 목적으로 사용, 어떤 값이 리턴될지 모르기 때문에 Object 타입으로 선언한다.          
+비즈니스 메소드가 리턴한 결괏값을 바인딩할 목적으로 사용, 어떤 값이 리턴될지 모르기에 ```Object``` 타입으로 선언한다.          
    
-After Returning 어드바이스 메소드에 JoinPoint만 선언되어 있다면 스프링 설정 파일은 수정하지 않아도 된다.       
-하지만 바인드 변수가 추가됐다면 반드시 바인드 변수에 대한 매핑 설정을 스프링 설정 파일에 추가해야 한다.    
-   
-이때 ```<aop:after-returning>```엘리먼트의 returning 속성을 사용한다.  
+After Returning 어드바이스 메소드에 바인드 변수가 추가됐다면        
+**반드시 바인드 변수에 대한 매핑 설정을 스프링 설정 파일에 추가해야 한다.**       
+이때 ```<aop:after-returning>```엘리먼트의 ```returning=""``` 속성을 사용한다.   
+
 ```
 	<aop:config>
 		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.*(..))" id="allPointcut" />
