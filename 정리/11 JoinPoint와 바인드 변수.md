@@ -6,6 +6,46 @@
 스프링에서는 어드바이스 메소드에서 비지니스 메소드 정보들을 이용할 수 있도록 JoinPoint 인터페이스를 제공한다.       
           
 # 1. JoinPoint 인터페이스와 메소드
+**UserServiceClient-사용할 파일**
+```
+package com.springbook.biz.user.impl;
+
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
+
+import com.springbook.biz.user.UserVO;
+
+public class UserServiceClient {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		// 1. Spring 컨테이너 구동한다.  
+		AbstractApplicationContext container =
+				new GenericXmlApplicationContext("applicationContext.xml");
+		
+		// 2. Spring 컨테이너로부터 UserServiceImpl 객체를 Lookup 한다.  
+		UserService userService = 
+				(UserService)container.getBean("userService");
+		
+		// 3. 로그인 기능 테스트
+		UserVO vo = new UserVO();
+		vo.setId("test");
+		vo.setPassword("test123");
+		
+		UserVO user = userService.getUser(vo);
+		if(user != null ) {
+			System.out.println(user.getName() + "님 환영합니다.");
+		} else {
+			System.out.println("로그인 실패");
+		}
+		
+		// 4. Spring 컨테이너를 종료한다.  
+		container.close();
+	}
+
+}
+```
 ## 1.1. 어드바이스 클래스의 메소드
 ```
 public void printLog(JoinPoint jp) {
@@ -113,9 +153,10 @@ public class AfterReturningAdvice {
 비즈니스 메소드가 리턴한 결괏값을 바인딩할 목적으로 사용, 어떤 값이 리턴될지 모르기에 ```Object``` 타입으로 선언한다.          
    
 After Returning 어드바이스 메소드에 바인드 변수가 추가됐다면        
-**반드시 바인드 변수에 대한 매핑 설정을 스프링 설정 파일에 추가해야 한다.**       
-이때 ```<aop:after-returning>```엘리먼트의 ```returning=""``` 속성을 사용한다.   
-
+**반드시 바인드 변수에 대한 매핑 설정을 스프링 설정 파일에 추가해야 한다.**         
+이때 ```<aop:after-returning>```엘리먼트의 ```returning=""``` 속성을 사용한다.       
+   
+**applicationContext.xml**
 ```
 	<aop:config>
 		<aop:pointcut expression="execution(* com.springbook.biz..*Impl.*(..))" id="allPointcut" />
@@ -130,8 +171,9 @@ After Returning 어드바이스 메소드에 바인드 변수가 추가됐다면
 ```AfterReturningAdvice``` 클래스의 ```afterReturningLog()``` 메소드는 해당 변수를 ```Object``` 객체로 받는다.   
 
 **returning 속성은 ```<aop:after-returning> 엘리먼트에서만 사용할 수 있는 속성이며,```  
-속성값은 반드시 어드바이스 메소드 매개변수로 선언된 바인드 변수 이름과 같아야 한다.**   
-
+속성값은 반드시 어드바이스 메소드 매개변수로 선언된 바인드 변수 이름과 같아야 한다.**    
+  
+**결과**  
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sat Nov 16 22:31:30 KST 2019]; root of context hierarchy
