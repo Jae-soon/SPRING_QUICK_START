@@ -31,13 +31,15 @@ proceed() 메소드를 추가해서 사용할 수 있다. (기존에 가로챈 �
 Around 어드바이스는 proceed()메소드가 필요하기 때문에 PoroceedingJoinPoint 를 매개변수로 갖는다.
    
 ## 1.3. Signature 객체   
+```
+sigObj = jp.getSignature();
+```
 getSignature() 메소드가 리턴하는 Signature 객체를 이용하면, 호출되는 메소드에 대한 다양한 정보를 얻을 수 있다.   
 ```
 String getName() : 클라이언트가 호출한 메소드 이름 리턴
 String toLongString() : 클라이언트가 호출한 메소드의 리턴타입, 이름, 매개변수를 패키지 경로까지 포함하여 리턴 
 String toShortString() : 클라이언트가 호출한 메소드 시그니처를 축약한 문자열로 리턴  
 ```
-
 **JoinPoint는 어드바이스의 종류(5가지)에 따라 사용 방법이 다소 다르다.**   
 그렇기에 앞으로 각 어드바이스마다 사용 방법에 대해서 배워보자   
    
@@ -62,9 +64,11 @@ public class BeforeAdvice {
 	}
 }
 ```
-JoinPoint 객체의 getSignature() 메소드를 이용하면, 클라이언트가 호출한 메소드 이름을 출력할 수 있다.    
-그리고 getArgs() 메소드를 통해 인자 목록을 Object 배열로 얻어낼 수 있어서  
-메소드 호출에 어떤 값들을 사용했는지도 알 수 있다.(정확히는 객체의 toString()을 호출하는 것인데 우리가 이미 기술함)        
+JoinPoint 객체의 ```getSignature()``` 메소드를 이용하면,    
+```getName()``` 메소드를 통해 클라이언트가 호출한 비즈니스 메소드의 이름을 출력할 수 있다.      
+   
+그리고 ```getArgs()``` 메소드를 통해 인자로 사용된 객체들을 Object 배열로 얻어낼 수 있어서 이를 처리할 수 있다. 
+위 코드에서는 우리가 앞서 ```UserVO```의 ```toString()``` 메소드를 오버라이딩 한 것을 호출하여 정보를 얻었다.         
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 19:28:36 KST 2019]; root of context hierarchy
@@ -76,7 +80,6 @@ INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostP
 관리자님 환영합니다.
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 19:28:36 KST 2019]; root of context hierarchy
 ```
-UserVO 객체가 인자로 전달 되었고 UserVO 객체에 설정된 정보도 확인할 수 있었다.      
    
 ***
 # 3. AfterReturning 어드바이스 
