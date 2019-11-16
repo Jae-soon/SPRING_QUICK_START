@@ -43,10 +43,12 @@ String toShortString() : 클라이언트가 호출한 메소드 시그니처를 
    
 ***
 # 2. Before 어드바이스
-Before 어드바이스는 비즈니스 메소드가 실행되기 전에 동작할 로직을 구현한다.  
-따라서 호출된 메소드 시그니처만 알 수 있으면 다양한 사전 처리 로직을 구현할 수 있다.   
-이 때 **어드바이스 메소드의 매개변수로 JoinPoint를 선언한다.**
+**Before 어드바이스는 비즈니스 메소드가 실행되기 전에 동작할 로직을 구현한다.**  
+따라서 호출된 메소드 시그니처만 알 수 있으면 다양한 사전 처리 로직을 구현할 수 있다.
+
+**BeforeAdvice**
 ```
+// 어드바이스 클래스 
 package com.springbook.biz.common;
 
 import org.aspectj.lang.JoinPoint;
@@ -62,7 +64,7 @@ public class BeforeAdvice {
 ```
 JoinPoint 객체의 getSignature() 메소드를 이용하면, 클라이언트가 호출한 메소드 이름을 출력할 수 있다.    
 그리고 getArgs() 메소드를 통해 인자 목록을 Object 배열로 얻어낼 수 있어서  
-메소드 호출에 어떤 값들을 사용했는지도 알 수 있다.      
+메소드 호출에 어떤 값들을 사용했는지도 알 수 있다.(정확히는 객체의 toString()을 호출하는 것인데 우리가 이미 기술함)        
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Wed Nov 06 19:28:36 KST 2019]; root of context hierarchy
