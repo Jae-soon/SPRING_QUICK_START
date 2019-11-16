@@ -298,10 +298,7 @@ Exception in thread "main" java.lang.IllegalArgumentException: 0번 글은 등�
 	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:208)
 	at com.sun.proxy.$Proxy11.insertBoard(Unknown Source)
 	at com.springbook.biz.board.impl.BoardServiceClient.main(BoardServiceClient.java:24)
-```
-```AfterThrowingAdvice``` 어드바이스 클래스의 ```execeptionLog()``` 메소드를 구현할 때,     
-발생하는 예외 객체의 종류에 따라 다양하게 예외처리를 진행할 수도 있다.      
-  
+```     
 **AfterThrowingAdvice**
 ```
 package com.springbook.biz.common;
@@ -323,6 +320,9 @@ public class AfterThrowingAdvice {
 	}
 }
 ```  
+```AfterThrowingAdvice``` 어드바이스 클래스의 ```execeptionLog()``` 메소드를 구현할 때,     
+발생하는 예외 객체의 종류에 따라 다양하게 예외처리를 진행할 수도 있다.   
+  
 **결과**
 ```
 INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
