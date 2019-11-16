@@ -126,8 +126,8 @@ After Returning 어드바이스 메소드에 바인드 변수가 추가됐다면
 		</aop:aspect> 
 	</aop:config>
 ```
-위의 설정은 비즈니스 메소드가 리턴한 결괏값을 returnObj라는 바인드 변수에 바인드하라는 설정이다.   
-AfterReturningAdvice의 afterReturningLog() 메소드는 해당 변수를 Object 객체로 받는다.   
+위의 설정은 비즈니스 메소드가 리턴한 결괏값을 ```returnObj```라는 바인드 변수에 바인드하라는 설정이다.(인자)     
+```AfterReturningAdvice``` 클래스의 ```afterReturningLog()``` 메소드는 해당 변수를 ```Object``` 객체로 받는다.   
 
 **returning 속성은 ```<aop:after-returning> 엘리먼트에서만 사용할 수 있는 속성이며,```  
 속성값은 반드시 어드바이스 메소드 매개변수로 선언된 바인드 변수 이름과 같아야 한다.**   
