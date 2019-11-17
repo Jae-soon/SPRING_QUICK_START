@@ -508,3 +508,45 @@ INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostP
 관리자님 환영합니다.
 INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sun Nov 17 20:49:05 KST 2019]; root of context hierarchy
 ```
+**AfterReturning 어드바이스**
+```
+package com.springbook.biz.common;
+
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.stereotype.Service;
+
+import com.springbook.biz.user.UserVO;
+
+@Service
+@Aspect
+public class AfterReturningAdvice {
+
+	@AfterReturning(pointcut="PointcutCommon.allPointcut()",returning="returnObj")
+	public void afterReturningLog(JoinPoint jp, Object returnObj) {
+		String method = jp.getSignature().getName();
+		if(returnObj instanceof UserVO) {
+			UserVO user = (UserVO) returnObj;
+			if(user.getRole().equals("Admin")) {
+				System.out.println(user.getName()+ "로그인(admin)");
+			}
+		}
+		System.out.println("[사후 처리]"+ method + "() 메소드 리턴값 : "+returnObj.toString());
+	}
+}
+
+```
+**결과**
+```
+INFO : org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loading XML bean definitions from class path resource [applicationContext.xml]
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Refreshing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sun Nov 17 20:50:33 KST 2019]; root of context hierarchy
+INFO : org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor - JSR-330 'javax.inject.Inject' annotation found and supported for autowiring
+===> JDBC로 getUser() 기능 처리
+관리자로그인(admin)
+[사후 처리]getUser() 메소드 리턴값 : UserVO [id=test, password=test123, name=관리자, role=Admin]
+관리자님 환영합니다.
+INFO : org.springframework.context.support.GenericXmlApplicationContext - Closing org.springframework.context.support.GenericXmlApplicationContext@782830e: startup date [Sun Nov 17 20:50:33 KST 2019]; root of context hierarchy
+```
