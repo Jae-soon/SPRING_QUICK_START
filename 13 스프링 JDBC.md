@@ -20,7 +20,12 @@ JdbcTemplate 클래스가 제공하는 템플릿 메소드를 호출하여 DB �
 스프링 JDBC를 이용하려면 BoardWeb 프로젝트에 있는 pom.xml 파일에 DBCP 관련 ```<depencency>``` 설정을 추가해야 한다.     
      
 **pom.xml**
-```
+```		<!-- jdbc -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${org.springframework-version}</version>
+		</dependency>
 		<!-- DBCP -->
 		<dependency>
 			<groupId>commons-dbcp</groupId>
