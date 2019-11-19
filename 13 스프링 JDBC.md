@@ -186,4 +186,23 @@ public class BoardRowMapper implements RowMapper<BoardVO>{
 ```
 RowMapper 객체를 queryForObject() 메소드의 매개변수로 넘겨주면,    
 스프링 컨테이너는 SQL 구문을 수행한 후 자동으로 RowMapper 객체의 mapRow() 메소드를 호출한다.    
-매개변수의 인자도 알아서 넣어준다.    
+매개변수의 인자도 알아서 넣어준다.      
+   
+## 3.4. query() 메소드     
+queryForObject() 가 SELECT 문으로 객체 하나를 검색할 때 사용하는 메소드라면,  
+query() 메소드는 SELECT 문의 실행 결과가 목록일 때 사용한다.  
+기본 사용법은 queryForObject()메소드와 같다.  
+따라서 query() 메소드에서도 검색 결과를 VO 객체에 매핑하려면 RowMapper 객체를 사용한다.  
+```
+List query(String sql)
+List query(String sql, RowMapper<T> rowMapper)
+List query(String sql, Object[] args, RowMapper<T> rowMapper)
+______________________________________________________
+public List<BoardVO> getBoardList(BoardVO vo){
+  String BOARD_LIST = "SELECT * FROM board ORDER BY seq DESC";
+  return jdbcTemplate.query(BOARD_GET, args, new BoardRowMapper());
+}
+```
+query() 메소드가 실행되면 여러 건의 ROW 정보가 검색되며,    
+검색된 데이터 ROW 수만큼 RowMapper 객체의 mapRow() 메소드가 실행된다.      
+그리고 이렇게 ROW 정보가 매핑된 VO 객체 여러 개가 List 컬렉션에 저장되어 리턴된다.   
