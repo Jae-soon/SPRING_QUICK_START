@@ -206,3 +206,15 @@ public List<BoardVO> getBoardList(BoardVO vo){
 query() 메소드가 실행되면 여러 건의 ROW 정보가 검색되며,    
 검색된 데이터 ROW 수만큼 RowMapper 객체의 mapRow() 메소드가 실행된다.      
 그리고 이렇게 ROW 정보가 매핑된 VO 객체 여러 개가 List 컬렉션에 저장되어 리턴된다.   
+   
+***
+# 4. DAO 클래스 구현 
+스프링 JDBC를 이용하기 위한 모든 설정이 마무리됐으면,    
+이제 jdbcTemplate 객체를 이용하여 DAO 클래스만 구현하면 된다.       
+그런데 DAO 클래스에서 JdbcTemplate 객체를 얻는 방법은 두 가지이다.    
+
+## 4.1 첫 번째 방법 : JdbcDaoSupport 클래스 상속
+**BoarDAOSpring**
+```
+
+```
