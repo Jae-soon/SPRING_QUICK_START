@@ -99,29 +99,43 @@ public void setSuperDataSource(DataSource dataSource) {
 메소드 위에 ```@Autowired```를 붙이면 해당 메소드를 스프링 컨테이너가 자동으로 해출해주며,     
 이때 메소드 매개변수 타입을 확인하고 해당 타입의 객체가 메모리에 존재하면 그 객체를 인자로 전달해준다.
    
-## 1.1. 소 주제
-### 1.1.1. 내용1
-```
-내용1
-```
-## 1.2. 소 주제
-### 1.2.1. 내용1
-```
-내용1
-```
-
 ***
-# 2. 대주제
-> 인용
-## 2.1. 소 주제
-### 2.1.1. 내용1
+# 2. 두 번째 방법 ㅣ JdbcTemplate 클래스 ```<bean>```등록, 의존성 주입  
+DAO 클래스에서 JdbcTemplate 객체를 얻는 두 번째 방법은       
+Jdbctempalte 클래스를 ```<bean>```등록하고, 의존성 주입으로 처리하는 것이다.      
+일반적으로 이러한 방법을 주로 사용한다.   
+  
+**applicationContext.xml**
 ```
-내용1
-```   
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd">
 
-***
-# 3. 대주제
-> 인용
+	<context:component-scan base-package="com.springbook.biz"></context:component-scan>
+	<context:property-placeholder location="classpath:config/database.properties"/>
+	<aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+	
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}"/>
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+	</bean>
+	
+	<!-- Spring JDBC 설정 -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+</beans>
+```
+**applicationContext.xml**
+
 ## 3.1. 소 주제
 ### 3.1.1. 내용1
 ```
