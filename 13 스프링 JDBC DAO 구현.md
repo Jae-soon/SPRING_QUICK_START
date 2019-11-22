@@ -89,7 +89,16 @@ DAO 클래스를 구현할 때, JdbcDaoSupport 클래스를 부모 클래스로 
 그런데 문제는 ```getJdbcTemplate()``` 메소드가 JdbcTemplate 객체를 리턴하려면 DataSource 객체를 가지고 있어야한다.  
 따라서 부모 클래스인 JdbcDaoSupport 에 ```setDataSource()```메소드를 호출하여 데이터소스 객체를 의존성 주입해야 한다.   
 
-
+```
+@Autowired
+public void setSuperDataSource(DataSource dataSource) {
+	super.setDataSource(dataSource);
+}
+```
+```@Autowired``` 어노테이션은 주로 변수 위에 선언하는데 메소드 위에 선언해도 동작한다.     
+메소드 위에 ```@Autowired```를 붙이면 해당 메소드를 스프링 컨테이너가 자동으로 해출해주며,     
+이때 메소드 매개변수 타입을 확인하고 해당 타입의 객체가 메모리에 존재하면 그 객체를 인자로 전달해준다.
+   
 ## 1.1. 소 주제
 ### 1.1.1. 내용1
 ```
