@@ -100,7 +100,7 @@ public void setSuperDataSource(DataSource dataSource) {
 이때 메소드 매개변수 타입을 확인하고 해당 타입의 객체가 메모리에 존재하면 그 객체를 인자로 전달해준다.
    
 ***
-# 2. 두 번째 방법 ㅣ JdbcTemplate 클래스 ```<bean>```등록, 의존성 주입  
+# 2. 두 번째 방법 JdbcTemplate 클래스 ```<bean>```등록, 의존성 주입  
 DAO 클래스에서 JdbcTemplate 객체를 얻는 두 번째 방법은       
 Jdbctempalte 클래스를 ```<bean>```등록하고, 의존성 주입으로 처리하는 것이다.      
 일반적으로 이러한 방법을 주로 사용한다.   
