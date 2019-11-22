@@ -213,6 +213,7 @@ class BoardRowmapper implements RowMapper<BoardVO> {
 	}
 }
 ```
+extends JdbcDaoSupport 를 제외하고 이를 대신하여 Autowired로 JdbcTemplate 변수를 얻어 사용한다.   
 **BoardServiceImpl**
 ```
 package com.springbook.biz.board.impl;
@@ -251,3 +252,4 @@ public class BoardServiceImpl implements BoardService {
 	}
 }
 ```
+JdbcDaoSupport 클래스를 상속하여 구현하는 것보다 좀 더 깔끔해진 것을 확인할 수 있다. 
