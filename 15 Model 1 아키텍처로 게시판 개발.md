@@ -143,8 +143,96 @@ BOARD 테이블에서 게시글을 검색하여 글 목록 화면을 구성하�
 
 **getBoardList.jsp**
 ```
+<%@page import="java.util.List"%>
+<%@page import="com.springbook.biz.board.impl.BoardDAO"%>
+<%@page import="com.springbook.biz.BoardVO"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%
+	// 1. 사용자 입력 정보 추출(검색 기능은 나중에 구현)
+	// 2. DB 연동처리
+	BoardVO vo = new BoardVO();
+	BoardDAO boardDAO = new BoardDAO();
+	List<BoardVO> boardList = boardDAO.getBoardList(vo);
 
+	// 3. 응답 화면 구성
+%>
+
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>글 목록</title>
+</head>
+<body>
+	<center>
+		<h1>글 목록</h1>
+		<h3>
+			테스트님 환영합니다...<a href="logout_proc.jsp">Log-out</a>
+		</h3>
+
+		<!-- 검색 시작 -->
+		<form action="getBoardList.jsp" method="post">
+			<table border="1" cellpadding="0" cellspacing="0" width="700">
+				<tr>
+					<td align="right"><select name="searchCondition">
+							<option value="TITLE">제목
+							<option value="CONTENT">내용
+					</select> <input name="searchKeyword" type="text" /> <input type="submit"
+						value="검색" /></td>
+				</tr>
+			</table>
+		</form>
+
+		<!-- 검색 종료 -->
+
+		<table border="1" cellpadding="0" cellspacing="0" width="700">
+			<tr>
+				<th bgcolor="orange" width="100">번호</th>
+				<th bgcolor="orange" width="200">제목</th>
+				<th bgcolor="orange" width="150">작성자</th>
+				<th bgcolor="orange" width="150">등록일</th>
+				<th bgcolor="orange" width="100">조회수</th>
+			</tr>
+
+			<%
+				for(BoardVO board : boardList){
+			%>
+			<tr>
+				<td><%= board.getSeq() %></td>
+				<td align="left">
+					<a href="getBoard.jsp?seq=<%= board.getSeq() %>"> <%=board.getTitle() %></a>
+				</td>
+				<td><%= board.getWriter() %></td>
+				<td><%= board.getRegDate() %></td>
+				<td><%= board.getCnt() %></td>
+			</tr>
+			<%		
+				}
+			%>
+		</table>
+		<br> <a href="insertBoard.jsp">새글 등록</a>
+	</center>
+</body>
+</html>
 ```
+getBoardList.jsp 파일에서는 사용자가 입력한 검색 관련 정보를 추출해야 하는데,  
+검색 기능은 나중에 추가로 구현하도록 한다.   
+따라서 곧바로 BoardVO 와 BoardDAO 객체를 이용하여 BOARD 테이블에 저장된 게시글 목록을 검색한다.    
+그리고 검색 결과로 얻은 ```List<BoardVO>``` 객체를 이용하여 게시글 목록 화면을 구성한다.   
+   
+위 소스에서 주목할 부분은 게시글 제목에 하이퍼링크를 설정하는 코드이다.  
+사용자가 게시글 제목을 클릭했을 때, 해당 게시글의 상세 정보를 조회하여 출력하기 위해서 getBoard.jsp 파일로 링크를 연결했다.   
+이때, 사용자가 클릭한 게시글 번호를 넘겨주고자 getBoard.jsp 파일 뒤에 "?"를 추가하고 쿼리 문자열 정보를 넘겨주었다.  
+```
+<td align="left">
+	<a href="getBoard.jsp?seq=<%= board.getSeq() %>"> <%=board.getTitle() %></a>
+</td>
+```
+이렇게 작성된 JSP 파일을 실행하면 다음과 같은 글 목록 화면이 출력된다.  
+이제 로그인 화면에서 로그인에 실패하면 로그인 화면으로 되돌아가고,  
+성공하면 글 목록 화면으로 이동한다.   
 ## 3.1. 소 주제
 ### 3.1.1. 내용1
 ```
