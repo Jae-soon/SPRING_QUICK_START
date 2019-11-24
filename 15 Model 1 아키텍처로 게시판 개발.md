@@ -38,29 +38,106 @@ Model 2 를 일반적으로 MVC 라고 부르는데, 이는 Model, View, Control
 우리가 최종적으로 적용할 것은 Model 2, 즉 MVC 아키텍처이지만 이번 시간에는 Model 1 아키텍처로 게시판 프로그램을 개발할 것이다.   
 이번 실습을 통해서 JSP 파일 작성에 필요한 기본 문법도 확인하고, 게시판 프로그램의 전반적인 기능도 이해하기 바란다.    
 그리고 게시판 프로그램에 사용할 화면은 HTML 태그만 사용하여 최대한 단순하게 처리할 것이다.  
-
-## 1.1. 소 주제
-### 1.1.1. 내용1
-```
-내용1
-```
-## 1.2. 소 주제
-### 1.2.1. 내용1
-```
-내용1
-```
-
+  
+이제 게시판 프로그램에서 가장 기본이 되는 로그인 기능부터 BOARD 테이블과 관련되 CRUD 기능을 차례로 구현해보도록 한다.    
+   
 ***
-# 2. 대주제
-> 인용
-## 2.1. 소 주제
-### 2.1.1. 내용1
+# 2. 로그인 기능 구현
+## 2.1. 로그인 화면
+게시판 사용자는 로그인을 성공해야 게시판 목록 화면을 볼 수 있으므로 가장 먼저 로그인 기능을 개발한다.    
+우선 사용자에게 로그인 화면을 제공하기 위해서 login.jsp 파일을 만든다.  
+  
+앞으로 작성하는 모든 JSP 파일은 ```src/main``` 폴더에 있는 webapp 폴더에 등록해야 한다.   
+따라서 이클립스의 프로젝트 탐색 창에서 ```src/main/webapp``` 폴더를 선택하고,   
+마우스 오른쪽 버튼을 클릭하여 ```[New]->[JSP File]```을 선택한다.   
+
+JSP 파일 생성 대화상자가 열리면 'File name'에 'login' 또는 'login.jsp'를 입력하고 ```<Finish>``` 버튼을 클릭한다.       
+   
+방금 생성한 login.jsp 파일에 HTML 태그들을 이용하여 로그인 화면을 구성한다.   
+
+**login.jsp**
 ```
-내용1
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>로그인</title>
+</head>
+<body>
+<center>
+<h1>로그인</h1>
+<hr>
+<form action="login_proc.jsp" method="post">
+<table border="1" cellpadding="0" cellspacing="0">
+	<tr>
+		<td bgcolor="orange">아이디</td>
+		<td><input type="text" name="id"></td>
+	</tr>
+	<tr>
+		<td bgcolor="orange">비밀번호</td>
+		<td><input type="password" name="password"></td>
+	</tr>
+	<tr>
+		<td colspan="2" align="center">
+			<input type="submit" value="로그인" />
+		</td>
+	</tr>	
+</table>
+</form>
+</center>
+</body>
+</html>
+```
+우선 여태까지 예제를 그대로 따라서 했다면      
+애플리케이션의 루트 디렉토리가 기존 다른 책들과는 다를 것이다.     
+예를 들면 ```http://localhost:8080/biz/login.jsp```로 되어있을 것이다.     
+이러한 url을 바꾸려면 실행중인 서버를 더블 클릭하고 아래에 새로 생기는 Modules 탭을 클릭해    
+기존 맵핑을 edit 해서 프로젝트 명으로 바꿔줄 수도 있다.    
+
+## 2.2. 로그인 인증 처리   
+이제 사용자가 입력한 아이디 비밀번호를 추출하여 로그인을 처리하는 login_proc.jsp 파일을 작성한다.   
+   
+**login_proc.jsp**
+```
+<%@page import="com.springbook.biz.user.impl.UserDAO"   %>
+<%@page import="com.springbook.biz.user.UserVO"%>
+<%@page contentType="text/html; charset=UTF-8" %>
+<%
+	// 1. 사용자 입력 정보 추출
+	String id = request.getParameter("id");
+	String password = request.getParameter("password");
+	
+	// 2. DB 연동 처리
+	UserVO vo = new UserVO();
+	vo.setId(id);
+	vo.setPassword(password);
+	
+	UserDAO userDAO = new UserDAO();
+	UserVO user = userDAO.getUser(vo);
+	
+	// 3. 화면 네비게이션  
+	if(user != null){
+		response.sendRedirect("getBoardList.jsp");
+	} else {
+		response.sendRedirect("login.jsp");
+	}
+%>
 ```   
-
+우선 사용자가 입력한 아이디와 비밀번호를 request 객체로부터 추출한다.   
+그리고 Model에 해당하는 UesrVO 와 UserDAO 객체를 이용하여 사용자 정보를 검색한다.   
+그리고 검색 결과로 UserVO 객체가 리턴되면 로그인이 성공이고, null이 리턴되면 로그인 실패로 처리한다.  
+   
+USERS 테이블에 등록된 계정으로 로그인에 성공하면 글목록 화면으로 이동하고,  
+실패하면 다시 로그인하도록 로그인 화면으로 이동한다.   
+화면 내비게이션 방법에는 포워드 방식과 리다이렉트 두 가지 방법이 있지만,  
+당분간은 로직의 단순화를 위해서 리다이렉트 방식만을 사용해서 개발한다.  
+    
+    
+    
 ***
-# 3. 대주제
+# 3. 글 목록 검색 기능 구현
 > 인용
 ## 3.1. 소 주제
 ### 3.1.1. 내용1
