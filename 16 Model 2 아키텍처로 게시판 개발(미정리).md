@@ -152,7 +152,23 @@ http://localhost:8080/BoardWeb/deleteBoard.do
 http://localhost:8080/BoardWeb/getBoard.do
 http://localhost:8080/BoardWeb/getBoardList.do
 ```
-
+**결과**
+```
+/login.do
+로그인 처리
+/logout.do
+로그아웃 처리
+/insertBoard.do
+글 등록 처리
+/updateBoard.do
+글 수정 처리
+/deleteBoard.do
+글 삭제 처리
+/getBoard.do
+글 상세 조회 처리
+/getBoardList.do
+글 목록 검색 처리
+```
 
 ***
 # 3. 대주제
