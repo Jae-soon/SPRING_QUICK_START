@@ -233,8 +233,143 @@ getBoardList.jsp 파일에서는 사용자가 입력한 검색 관련 정보를 
 이렇게 작성된 JSP 파일을 실행하면 다음과 같은 글 목록 화면이 출력된다.  
 이제 로그인 화면에서 로그인에 실패하면 로그인 화면으로 되돌아가고,  
 성공하면 글 목록 화면으로 이동한다.   
-## 3.1. 소 주제
-### 3.1.1. 내용1
+           
+***
+# 4. 글 상세 기능 구현   
+글 목록 화면에서 사용자가 클릭한 게시글을 조회하고,     
+조회된 게시글의 상세 화면을 제공하는 ```getBoard.jsp``` 파일을 작성한다.     
+
+**getBoard.jsp**
 ```
-내용1
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>로그인</title>
+</head>
+<body>
+<center>
+<h1>로그인</h1>
+<hr>
+<form action="login_proc.jsp" method="post">
+<table border="1" cellpadding="0" cellspacing="0">
+	<tr>
+		<td bgcolor="orange">아이디</td>
+		<td><input type="text" name="id"></td>
+	</tr>
+	<tr>
+		<td bgcolor="orange">비밀번호</td>
+		<td><input type="password" name="password"></td>
+	</tr>
+	<tr>
+		<td colspan="2" align="center">
+			<input type="submit" value="로그인" />
+		</td>
+	</tr>	
+</table>
+</form>
+</center>
+</body>
+</html>
 ```
+```getboard.jsp``` 파일은 가장 먼저 글 목록 화면에서 사용자가 클릭한 게시글 번호를 추출한다.         
+그리고 BoardDAO 객체의 ```getBoard()``` 메소드를 이용하여 이 게시글 번호에 해당하는 BoardVO 객체를 검색한다.      
+마지막으로 검색된 BoardVO 객체의 값들을 화면에 적절히 출력했다.       
+
+이제 글 목록 화면에서 제목 링크를 클릭하면 해당 게시글의 상세 화면이 출력된다.   
+이때 다음 그림처럼 URL 끝 부분에 조회할 게시글의 일련번호가 쿼리 문자열 형태로 추가되는지 반드시 확인한다.  
+  
+상세 화면은 수정을 위한 화면이기도 하다.   
+따라서 제목과 내용을 수정하고 글 수정 버튼을 클릭하면 글 수정 처리가 되어야 한다.  
+그리고 아래에는 세개의 링크가 제공된다.  
+'글등록'링크를 클릭하면 등록 화면으로 이동하고, '글삭제'를 클릭하면 현재 보고 있는 게시글이 삭제된다.  
+마지막으로 '글목록'을 클릭하면 다시 게시글 목록 화면으로 이동한다.   
+           
+***
+# 5. 글 등록 기능 구현
+## 5.1. 글 등록 화면   
+글 등록 기능은 먼저 inserboard.jsp 파일을 생성하여 글 등록 화면을 구성한다.    
+   
+**insertBoard.jsp**
+```
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>새 글 등록</title>
+</head>
+<body>
+	<center>
+		<h1>글 등록</h1>
+		<a href="logout_proc.jsp">Log-out</a>
+		<hr>
+		<form action="insertBoard_proc.jsp" method="post">
+			<table border="1" cellpadding="0" cellspacing="0">
+				<tr>
+					<td bgcolor="orange" width="70">제목</td>
+					<td align="left"><input name="title" type="text" /></td>
+				</tr>
+				<tr>
+					<td bgcolor="orange" width="70">작성자</td>
+					<td align="left"><input name="writer" type="text" size="10" /></td>
+				</tr>
+				<tr>
+					<td bgcolor="orange" width="70">내용</td>
+					<td align="left"><textarea rows="10" cols="40" name="content"></textarea></td>
+				</tr>
+				<tr>
+					<td colspan="2" align="center"><input type="submit"
+						value="새글 등록" /></td>
+				</tr>
+			</table>
+		</form>
+		<hr>
+	</center>
+</body>
+</html>
+```
+글 등록 화면은 로그인 화면과 거의 유사하다.      
+사용자가 title, writer, content 파라미터 정보를 입력하고     
+글 등록 버튼을 클릭하면 insertBoard_proc.jsp 파일을 호출한다.        
+작성된 파일을 저장하고 실행하면 브라우저에 글 등록 화면이 출력된다.    
+   
+## 5.2. 글 등록 처리   
+사용자가 입력한 데이터를 데이터베이스의 BOARD 테이블에 저장하는 insertBoard_proc.jsp 파일을 다음과 같이 작성한다.   
+
+**insertBoard_proc.jsp**
+```
+<%@page import="com.springbook.biz.board.impl.BoardDAO" %>
+<%@page import="com.springbook.biz.BoardVO" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+    
+<%
+	// 1. 사용자 입력 정보 추출 
+	
+	request.setCharacterEncoding("UTF-8");
+	String title = request.getParameter("title");
+	String writer = request.getParameter("writer");
+	String content = request.getParameter("content");
+	
+	// 2. DB 연동 처리
+	BoardVO vo = new BoardVO();
+	vo.setTitle(title);
+	vo.setTitle(writer);
+	vo.setTitle(content);
+	
+	BoardDAO boardDAO = new BoardDAO();
+	boardDAO.insertBoard(vo);
+	
+	// 3. 화면 네비게이션
+	response.sendRedirect("getBoardList.jsp");
+%>    
+```
+글 등록 처리 로직에서 가장 먼저 작성한 것은 인코딩 관련 코드이다.        
+사용자 입력 데이터에 한글이 포함되어 있으면,      
+사용자 입력 정보를 ```getParameter()``` 메소드로 추출했을 때 한글이 깨진다.       
+따라서 사용자 입력 정보를 추출하기 직전에 반드시 ```setCharacterEncoding()``` 메소드를 한글 인코딩을 처리해야 한다.  
+
