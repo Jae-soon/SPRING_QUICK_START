@@ -358,8 +358,8 @@ getBoardList.jsp 파일에서는 사용자가 입력한 검색 관련 정보를 
 	// 2. DB 연동 처리
 	BoardVO vo = new BoardVO();
 	vo.setTitle(title);
-	vo.setTitle(writer);
-	vo.setTitle(content);
+	vo.setWriter(writer);
+	vo.setContent(content);
 	
 	BoardDAO boardDAO = new BoardDAO();
 	boardDAO.insertBoard(vo);
@@ -385,4 +385,46 @@ getBoardList.jsp 파일에서는 사용자가 입력한 검색 관련 정보를 
 그런데 글 수정을 처리하려면 수정할 글의 제목과 내용뿐만 아니라 게시글 번호도 알아야 한다.    
 따라서 상세 화면을 출력할 때 ```<form>```태그 밑에 HIDDEN 타입의 ```<input>```태그를 추가하여  
 수정할 게시글 번호도 같이 전달될 수 있도록 수정해야 한다.     
+  
+이제 사용자가 게시글 상세 화면에서 수정할 제목과 내용 정보를 입력하고  
+글 수정 버튼을 클릭하면 사용자가 입력한 title, content 파리미터의 정보와 
+HIDDEN 으로 설정한 게시글 번호를 가지고 updateBoard_proc.jsp 파일을 호출한다.  
+  
+따라서 사용자가 입력한 수정 정보로 실제 글 수정 작업을 처리할   
+updateBoard_proc.jsp 파일을 작성한다.   
+
+**updateBoard_proc.jsp**
+```
+<%@page import="com.springbook.biz.board.impl.BoardDAO" %>
+<%@page import="com.springbook.biz.BoardVO" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%
+	// 1. 사용자 입력 정보 추출 
+	
+	request.setCharacterEncoding("UTF-8");
+	String title = request.getParameter("title");
+	String content = request.getParameter("content");
+	String seq = request.getParameter("seq");
+	
+	
+	// 2. DB 연동 처리
+	BoardVO vo = new BoardVO();
+	vo.setTitle(title);
+	vo.setContent(content);
+	vo.setSeq(Integer.parseInt(seq));
+	
+	BoardDAO boardDAO = new BoardDAO();
+	boardDAO.updateBoard(vo);
+	
+	// 3. 화면 네비게이션
+	response.sendRedirect("getBoardList.jsp");
+%>    
+```
+글 등록과 마찬가지로 글 수정 작업에서도 사용자가 입력한 한글에 대해서 인코딩 처리를 해야한다.    
+따라서 getParameter() 메소드를 사용하기 전에 setCharacterEncoding() 메소드를 추가한다.       
     
+인코딩 처리된 입력값들을 BoardVO 객체에 저장했으면,          
+BoardDAO 의 updateBoard() 메소드를 이용하여 데이터를 수정한다.             
+그리고 글 목록 화면으로 이동하면 글 수정 처리는 마무리된다.      
+
