@@ -169,10 +169,77 @@ http://localhost:8080/BoardWeb/getBoardList.do
 /getBoardList.do
 글 목록 검색 처리
 ```
-
+  
 ***
-# 3. 대주제
-> 인용
+# 3. 로그인 기능 구현하기  
+로그인 기능을 MVC로 변환하려면 login.jsp 파일의 ```<form>```엘리먼트의 action 속성값을 login.do로 수정한다.   
+```*.do```형태의 요청에 대해서만 DispatcherServlet이 동작하기 때문이다.   
+**login.jsp**
+```
+~ 생략 ~
+<form action="login.do" method="post">
+<table border="1" cellpadding="0" cellspacing="0">
+	<tr>
+		<td bgcolor="orange">아이디</td>
+		<td><input type="text" name="id"></td>
+	</tr>
+~ 생략 ~	
+```
+그리고 login_proc.jsp 파일에 있는 모든 자바 로직을 복사하여 DistPatcherServlet에 추가한다.   
+이때 요청 path가 ```/login.do```일 때 실행되는 영역에 소스를 복사하면 된다.   
+
+**DistpatcherServlet**
+```
+~ 생략 ~
+	private void process(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		// 1. 클라이언트의 요청 path 정보를 추출한다.
+		String uri = request.getRequestURI();
+		String path = uri.substring(uri.lastIndexOf("/"));
+		System.out.println(path);
+
+		// 2. 클라이언트의 요청 path에 따라 적절히 분기처리 한다.
+		if (path.equals("/login.do")) {
+			System.out.println("로그인 처리");
+			
+			// 1. 사용자 입력 정보 추출
+			String id = request.getParameter("id");
+			String password = request.getParameter("password");
+			
+			// 2. DB 연동 처리
+			UserVO vo = new UserVO();
+			vo.setId(id);
+			vo.setPassword(password);
+			
+			UserDAO userDAO = new UserDAO();
+			UserVO user = userDAO.getUser(vo);
+			
+			// 3. 화면 네비게이션  
+			if(user != null){
+				response.sendRedirect("getBoardList.jsp");
+			} else {
+				response.sendRedirect("login.jsp");
+			}
+			
+		} else if (path.equals("/logout.do")) {
+			System.out.println("로그아웃 처리");
+		} else if (path.equals("/insertBoard.do")) {
+			System.out.println("글 등록 처리");
+		} else if (path.equals("/updateBoard.do")) {
+			System.out.println("글 수정 처리");
+		} else if (path.equals("/deleteBoard.do")) {
+			System.out.println("글 삭제 처리");
+		} else if (path.equals("/getBoard.do")) {
+			System.out.println("글 상세 조회 처리");
+		} else if (path.equals("/getBoardList.do")) {
+			System.out.println("글 목록 검색 처리");
+		}
+	}
+}
+```
+login_proc.jsp 파일에서 자바 코드를 가져오고 추가로 작성할 코드는 없다.   
+다만 클래스에대한 import 선언을 추가해주자 (```<ctrl>+<shift>+<O>``` 단축키를 사용해도 좋다)     
+
+로그인 기능을 구현했으니 login.jsp 파일을 실행하여 로그인에 성공했을 때 글 목록 화면이 실행되는지 확인한다.  
 ## 3.1. 소 주제
 ### 3.1.1. 내용1
 ```
