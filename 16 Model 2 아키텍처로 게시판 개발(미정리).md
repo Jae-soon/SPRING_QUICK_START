@@ -238,11 +238,143 @@ http://localhost:8080/BoardWeb/getBoardList.do
 ```
 login_proc.jsp 파일에서 자바 코드를 가져오고 추가로 작성할 코드는 없다.   
 다만 클래스에대한 import 선언을 추가해주자 (```<ctrl>+<shift>+<O>``` 단축키를 사용해도 좋다)     
-
+     
 로그인 기능을 구현했으니 login.jsp 파일을 실행하여 로그인에 성공했을 때 글 목록 화면이 실행되는지 확인한다.  
-## 3.1. 소 주제
-### 3.1.1. 내용1
+  
+***
+# 4. 글 목록 검색 기능 구현하기   
+MVC 구조로 변형하는 데 가장 중요한 기능이 바로 글 목록 검색 기능이다.  
+우선 기존에 목록 화면을 처리했던 getBoardList.jsp 파일에서    
+Controller 로직에 해당하는 자바 코드를 DispatcherServlet으로 복사한다.   
+이때 요청 path가 ```/getBoardList.do```일 때 실행되는 영역에 소스를 복사하면 된다.   
+
+**DistpatcherServlet**
 ```
-내용1
+~ 생략 ~
+
+		} else if (path.equals("/logout.do")) {
+			System.out.println("로그아웃 처리");
+		} else if (path.equals("/insertBoard.do")) {
+			System.out.println("글 등록 처리");
+		} else if (path.equals("/updateBoard.do")) {
+			System.out.println("글 수정 처리");
+		} else if (path.equals("/deleteBoard.do")) {
+			System.out.println("글 삭제 처리");
+		} else if (path.equals("/getBoard.do")) {
+			System.out.println("글 상세 조회 처리");
+		} else if (path.equals("/getBoardList.do")) {
+			System.out.println("글 목록 검색 처리");
+			// 1. 사용자 입력 정보 추출(검색 기능은 나중에 구현)
+			// 2. DB 연동처리
+			BoardVO vo = new BoardVO();
+			BoardDAO boardDAO = new BoardDAO();
+			List<BoardVO> boardList = boardDAO.getBoardList(vo);
+			
+			// 3. 검색 결과를 세션에 저장하고 목록 화면으로 이동한다.  
+			HttpSession session = request.getSession();
+			session.setAttribute("boardList", boardList);
+			response.sendRedirect("getBoardList.jsp");
+		}
+	}
+}
 ```
- 
+위 소스는 리다이렉트되는 getBoardList.jsp 화면에서 검색 결과를 출력하기 위해 세션 객체를 사용했다.   
+사실 검색 결과를 JSP에 공유하기 위해 세션에 저장하는 것은 문제가 있다.   
+세션은 브라우저당 서버 메모리에 하나씩 유지되는 객체이므로 사용자가 많을수록 많은 세션이 생성되고,  
+세션에 정보가 많이 저장될수록 서버 입장에서는 부담스러울 수밖에 없다.      
+      
+따라서 검색 결과는 세션이 아닌 HttpServletRequest 객체에 저장하여 공유해야 한다.   
+HttpServletRequest 객체는 클라리언트가 서버에 요청을 전송할 때마다    
+매번 새롭게 생성되며, 응답 메시지가 브라우저에 전송되면 바로 삭제되는 1회성 객체이므로  
+공유할 데이터를 HttpServletRequest에 저장하면 서버에는 전혀 부담되지 않는다.  
+
+하지만 우선 코드의 간결함을 유지하기 위해서 세션을 사용했으니 이를 이해바란다.(나중에 바꿀 예정)   
+이제 getBoardList.jsp 파일은 글 목록을 검색하는 자바 코드 대신에 세션에 저장된 글 목록을 꺼내서 출력하도록 수정해야 한다.   
+
+**getBoardList.jsp**
+```
+<%@page import="java.util.List"%>
+<%@page import="com.springbook.biz.board.impl.BoardDAO"%>
+<%@page import="com.springbook.biz.BoardVO"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+
+<%
+	List<BoardVO> boardList = (List)session.getAttribute("boardList");
+%>
+
+~ 생략 ~
+```
+getBoardList.jsp 파일은 이제 직접 DB 연동을 처리하지 않는다.   
+getBoardList.jsp 파일에 있었던 자바 코드는 Controller인 DispatcherServlet 클래스로 이동했으며,  
+getBoardList.jsp는 단지 세션에 저장된 글 목록을 꺼내서 출력하는 기능만 제공할 뿐이다.  
+따라서 브라우저에서 getBoardList.jsp 파일을 직접 요청하거나  
+login.jsp 파일을 실행하여 로그인에 성공하면 오류 화면이 출력된다.   
+
+검색 결과를 세션에 저장해야 하므로 반드시 브라우저는 ```/getBoardList.do```로 요청해야 한다.  
+브라우저에서 ```getBoardList.do```요청을 했을 때 실행되는 순서를 그림으로 살펴보면 이해가 쉬울 것이다.   
+   
+![KakaoTalk_20191126_202017183](https://user-images.githubusercontent.com/50267433/69625626-54a74100-108a-11ea-9ba4-bbb6835ca50a.jpg)   
+  
+따라서 글 목록 화면을 출력하려면 getBoardList.jsp 파일을 직접 요청하지 않고 getBoardLsit.do를 요청해야한다.    
+그리고 로그인에 성공했을 때도 글 목록을 정상으로 출력하려면 getbBoardLsit.jsp가 아니라  
+```/getBoardLsit.do```로 리다이렉트 해야한다.    
+
+**DispatcherServlet**
+```
+	private void process(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		// 1. 클라이언트의 요청 path 정보를 추출한다.
+		String uri = request.getRequestURI();
+		String path = uri.substring(uri.lastIndexOf("/"));
+		System.out.println(path);
+
+		// 2. 클라이언트의 요청 path에 따라 적절히 분기처리 한다.
+		if (path.equals("/login.do")) {
+			System.out.println("로그인 처리");
+			
+			// 1. 사용자 입력 정보 추출
+			String id = request.getParameter("id");
+			String password = request.getParameter("password");
+			
+			// 2. DB 연동 처리
+			UserVO vo = new UserVO();
+			vo.setId(id);
+			vo.setPassword(password);
+			
+			UserDAO userDAO = new UserDAO();
+			UserVO user = userDAO.getUser(vo);
+			
+			// 3. 화면 네비게이션  
+			if(user != null){
+				response.sendRedirect("getBoardList.do");
+			} else {
+				response.sendRedirect("login.jsp");
+			}
+			
+		} else if (path.equals("/logout.do")) {
+			System.out.println("로그아웃 처리");
+		} else if (path.equals("/insertBoard.do")) {
+			System.out.println("글 등록 처리");
+		} else if (path.equals("/updateBoard.do")) {
+			System.out.println("글 수정 처리");
+		} else if (path.equals("/deleteBoard.do")) {
+			System.out.println("글 삭제 처리");
+		} else if (path.equals("/getBoard.do")) {
+			System.out.println("글 상세 조회 처리");
+		} else if (path.equals("/getBoardList.do")) {
+			System.out.println("글 목록 검색 처리");
+			// 1. 사용자 입력 정보 추출(검색 기능은 나중에 구현)
+			// 2. DB 연동처리
+			BoardVO vo = new BoardVO();
+			BoardDAO boardDAO = new BoardDAO();
+			List<BoardVO> boardList = boardDAO.getBoardList(vo);
+			
+			// 3. 검색 결과를 세션에 저장하고 목록 화면으로 이동한다.  
+			HttpSession session = request.getSession();
+			session.setAttribute("boardList", boardList);
+			response.sendRedirect("getBoardList.jsp");
+		}
+
+	}
+
+```
