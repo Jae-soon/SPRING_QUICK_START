@@ -648,12 +648,19 @@ DispatcherServlet 클래스의 logout.do 분기 처리 부분으로 이동한다
 			response.sendRedirect("login.jsp");
 		} else if (path.equals("/insertBoard.do")) {
 ```
-이제 게시판과 관련된 모든 기능이 MVC 구조로 수정되었다.   
-그림 3-7은 지금까지 작업한 파일들이 MVC 아키텍처에서 어느 부분에 해당하는지 보여준다.     
-   
-먼저 Model 기능의 VO,DAO 클래스는 재사용되었고,   
-DispatcherServlet이라는 Controller 기능의 서블릿 클래스가 추가되었다.  
-가장 큰 변화는 View 기능의 JSP 파일인데, 우선 Controller 기능의 자바 로직을 DispatcherSerlvet 클래스로 이동했다.   
-따라서 xxx_proc.jsp 파일들은 모두 삭제해도 된다.  
-그리고 getBoard.jsp 와 getBoardList.jsp 파일에서도 Controller 자바 로직은 사라진 상태다.   
-즉, MVC 아키텍처를 적용한 결과 JSP에서 Controller 로직에 해당하는 자바 코드는 모두 제거되었다.
+이제 게시판과 관련된 모든 기능이 MVC 구조로 수정되었다.     
+그림 3-7은 지금까지 작업한 파일들이 MVC 아키텍처에서 어느 부분에 해당하는지 보여준다.       
+     
+먼저 Model 기능의 VO,DAO 클래스는 재사용되었고,     
+DispatcherServlet이라는 Controller 기능의 서블릿 클래스가 추가되었다.    
+가장 큰 변화는 View 기능의 JSP 파일인데, 우선 Controller 기능의 자바 로직을 DispatcherSerlvet 클래스로 이동했다.     
+따라서 xxx_proc.jsp 파일들은 모두 삭제해도 된다.    
+그리고 getBoard.jsp 와 getBoardList.jsp 파일에서도 Controller 자바 로직은 사라진 상태다.     
+즉, MVC 아키텍처를 적용한 결과 JSP에서 Controller 로직에 해당하는 자바 코드는 모두 제거되었다.  
+  
+물론 여전히 세션에 저장된 데이터를 꺼내는 코드와 for 루프 같은 자바 코드가     
+getBoard.jsp 와 getBoardList.jsp 파일에 남아있다.      
+하지만 이런 코드를 Controller 로직이라고는 하지 않으므로 큰 의미는 없다.     
+그리고 실제로 이런 자바 코드들은 EL 과 JSTL을 이용하면 모두 제거할 수 있다.    
+다시 한 번 강조하지만 Controller 로직은 사용자 입력 정보 추출, Model을 이용한 DB 연동처리,    
+화면 내비게이션에 해당하는 자바 코드를 의미한다.     
