@@ -376,5 +376,238 @@ login.jsp 파일을 실행하여 로그인에 성공하면 오류 화면이 출�
 		}
 
 	}
-
 ```
+     
+***
+# 5. 글 상세 보기 기능 구현하기  
+글 목록 화면에서 게시글 제목을 클릭하면 글 상세 화면이 출력됐었다.  
+이제는 상세 화면도 MVC 아키텍처로 변환해보자.  
+먼저 getBoardList.jsp 파일을 열어서 게시글 제목에 설정된 하이퍼링크를 수정한다.     
+   
+**getBoardList.jsp**
+```
+~ 생략 ~
+			<%
+				for(BoardVO board : boardList){
+			%>
+			<tr>
+				<td><%= board.getSeq() %></td>
+				<td align="left"><a
+					href="getBoard.do?seq=<%= board.getSeq() %>"> <%=board.getTitle() %></a></td>
+				<td><%= board.getWriter() %></td>
+				<td><%= board.getRegDate() %></td>
+				<td><%= board.getCnt() %></td>
+			</tr>
+			<%		
+				}
+			%>
+		</table>
+		<br> <a href="insertBoard.jsp">새글 등록</a>
+	</center>
+</body>
+</html>
+```
+기존에는 getBoard.jsp 파일로 바로 링크를 걸었다면  
+이제는 게시글의 상세 정보를 검색할 수 있도록 getBoard.do 링크를 수정해야한다.  
+  
+getBoard.jsp 파일에 있던 자바 코드를 DistpatcherServlet 클래스에 ```/getBoard.do```분기 처리 부분에 복사한다.  
+    
+**DispatcherServlet**
+```
+~ 생략 ~
+		} else if (path.equals("/getBoard.do")) {
+			System.out.println("글 상세 조회 처리");
+			
+			// 1. 검색할 게시글 번호 추출
+			String seq = request.getParameter("seq");
+
+			// 2. DB 연동 처리
+			BoardVO vo = new BoardVO();
+			vo.setSeq(Integer.parseInt(seq));
+
+			BoardDAO boardDAO = new BoardDAO();
+			BoardVO board = boardDAO.getBoard(vo);
+			
+			// 3. 응답 화면 구성
+			HttpSession session = request.getSession();
+			session.setAttribute("board", board);
+			response.sendRedirect("getBoard.jsp");
+			
+		} 
+~ 생략 ~		
+```
+글 상세 조회는 글 목록 검색 기능과 비슷하다.  
+따라서 검색 결과를 getBoard.jsp 파일에 공유하기 위해서  
+세션에 저장하고 getBoard.jsp 파일을 리다이렉트한다.   
+   
+이제 세션에 저장된 검색 결과를 getBoard.jsp 파일에서 출력한다.  
+
+**getBoard.jsp**
+```
+<%@page import="com.springbook.biz.board.impl.BoardDAO"%>
+<%@page import="com.springbook.biz.BoardVO"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+
+<%
+	BoardVO board = (BoardVO)session.getAttribute("board");
+%>
+
+~ 생략 ~ 
+```  
+   
+***
+# 6. 글 등록 기능 구현하기    
+글 등록 기능을 MVC로 변환하려면 가장 먼저 insertBoard.jsp 파일을 수정한다.        
+```<form>```엘리먼트의 action 속성값을 ```insertBoard.do```로 수정한다.     
+
+**insertBoard.jsp**
+```
+~ 생략 ~
+
+		<h1>글 등록</h1>
+		<a href="logout_proc.jsp">Log-out</a>
+		<hr>
+		<form action="insertBoard.do" method="post">
+			<table border="1" cellpadding="0" cellspacing="0">
+				<tr>
+					<td bgcolor="orange" width="70">제목</td>
+					<td align="left"><input name="title" type="text" /></td>
+				</tr>
+~ 생략 ~
+```
+그리고 insertBoard_proc.jsp 파일에 있던 자바 코드를 복사하여 DispatcherServlet 클래스의  
+```insertBoard.do``` 분기 처리 부분으로 이동한다.  
+
+**DispatcherServlet**
+```
+~ 생략 ~ 
+		} else if (path.equals("/insertBoard.do")) {
+			System.out.println("글 등록 처리");
+			
+			// request.setCharacterEncoding("UTF-8");
+			String title = request.getParameter("title");
+			String writer = request.getParameter("writer");
+			String content = request.getParameter("content");
+			
+			// 2. DB 연동 처리
+			BoardVO vo = new BoardVO();
+			vo.setTitle(title);
+			vo.setWriter(writer);
+			vo.setContent(content);
+			
+			BoardDAO boardDAO = new BoardDAO();
+			boardDAO.insertBoard(vo);
+			
+			// 3. 화면 네비게이션
+			response.sendRedirect("getBoardList.do");
+~ 생략 ~
+```
+여기에서 주의할 점은 등록 작업이 성공하면 반드시 getBoardList.do 를 다시 요청해야 한다는 것이다.      
+만약 등록 작업이 성공한 상태에서 getBoardList.jsp 화면으로 이동하면 getBoardList.jsp는 등록 전,      
+세션에 저장된 글 목록을 또다시 출력할 것이다.  (do 로 다시 Dispatcher 처리를 해주어야한다.)     
+     
+따라서 등록, 수정, 삭제, 작업 이후에는 반드시 getBoardList.do 를 다시 요청해서 세션에 저장된 글 목록을 갱신해야한다.     
+그리고 한글 인코딩과 관련된 자바 코드는 주석 처리하거나 삭제해도 된다.     
+왜냐하면 DispatcherServlet의 doPost() 메소드가 일괄적으로 한글 인코딩을 처리해주기 때문이다.        
+이는 수정 기능과 검색 기능 모두에 해당한다.      
+   
+***
+# 7. 글 수정 기능 구현하기  
+글 수정 기능을 MVC로 변환하려면 getBoard.jsp 파일에서    
+```<form>``` 태그의 action 속성값을 updateBoard.do로 수정하여 구현한다.    
+
+**getBoard.jsp**
+```
+~ 생략 ~
+		<h1>글 상세</h1>
+		<a href="logout_proc.jsp">Log-out</a>
+		<hr>
+		<form action="updateBoard.do" method="post">
+			<input name="seq" type="hidden" value="<%= board.getSeq() %>" />
+			<table border="1" cellpadding="0" cellspacing="0">
+				<tr>
+					<td bgcolor="orange" width="70">제목</td>
+					<td align="left"><input name="title" type="text"
+						value="<%=board.getTitle()%>" /></td>
+				</tr>
+
+~ 생략 ~
+```
+그리고 updateBoard_proc.jsp 파일에 있던 자바코드를 복사하여     
+DispatcherServlet 클래스의 updateBoard.do 분기 처리로 이동한다.    
+
+**DispatcherServlet**
+```
+~ 생략 ~	
+		} else if (path.equals("/updateBoard.do")) {
+			System.out.println("글 수정 처리");
+			// 1. 사용자 입력 정보 추출 
+			
+			request.setCharacterEncoding("UTF-8");
+			String title = request.getParameter("title");
+			String content = request.getParameter("content");
+			String seq = request.getParameter("seq");
+			
+			
+			// 2. DB 연동 처리
+			BoardVO vo = new BoardVO();
+			vo.setTitle(title);
+			vo.setContent(content);
+			vo.setSeq(Integer.parseInt(seq));
+			
+			BoardDAO boardDAO = new BoardDAO();
+			boardDAO.updateBoard(vo);
+			
+			// 3. 화면 네비게이션
+			response.sendRedirect("getBoardList.do");
+
+~ 생략 ~
+```
+글 수정 작업이 처리된 후에도 반드시 ```/getBoardList.do```를 리다이렉트하여 세션에 저장된 글 목록을 갱신한다.  
+그리고 글 등록과 마찬가지로 한글 인코딩은 DispatcherServlet의 doPost() 메소드에서 처리되므로 주석 처리하거나 삭제한다.  
+   
+***
+# 8. 글 삭제 기능 구현하기  
+글 삭제 기능을 MVC로 변환하려면 가장 먼저 getBoard.jsp 파일에서 글 삭제 관련 링크를  
+```deleteBoard.do```로 수정한다. 그리고 글 목록 링크도 ```getBoardLsit.do```로 함께 수정한다.  
+
+**getBoard.jsp**
+```
+~ 생략 ~
+		</form>
+		<hr>
+		<a href="insertBoard.jsp">글 등록</a>&nbsp;&nbsp;&nbsp; 
+		<a href="deleteBoard.do?seq=<%= board.getSeq() %>">글 삭제</a> 
+		<a href="getBoardList.do">글 목록</a>&nbsp;&nbsp;&nbsp;
+	</center>
+</body>
+</html>
+```
+그리고 deleteBoard_proc.jsp 파일에 있던 자바 코드를 복사하여 DispatcherServlet 클래스의   
+deleteBoard.do 분기 처리 부분으로 이동한다.  
+
+**DispatcherSerlvet**
+```
+~ 생략 ~
+		} else if (path.equals("/deleteBoard.do")) {
+			System.out.println("글 삭제 처리");
+			// 1. 사용자 입력 정보 추출 
+			
+			request.setCharacterEncoding("UTF-8");
+			String seq = request.getParameter("seq");
+			
+			
+			// 2. DB 연동 처리
+			BoardVO vo = new BoardVO();
+			vo.setSeq(Integer.parseInt(seq));
+			
+			BoardDAO boardDAO = new BoardDAO();
+			boardDAO.deleteBoard(vo);
+			
+			// 3. 화면 네비게이션
+			response.sendRedirect("getBoardList.do");
+		} else if (path.equals("/getBoard.do")) {
+~ 생략 ~
+```
+글 삭제 작업이 처리된 후에도 반드시 getBoardList.do 를 호출하여 세션에 저장된 글 목록을 갱신한다.  
