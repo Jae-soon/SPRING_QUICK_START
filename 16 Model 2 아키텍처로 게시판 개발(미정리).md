@@ -611,3 +611,49 @@ deleteBoard.do 분기 처리 부분으로 이동한다.
 ~ 생략 ~
 ```
 글 삭제 작업이 처리된 후에도 반드시 getBoardList.do 를 호출하여 세션에 저장된 글 목록을 갱신한다.  
+   
+***
+# 9. 로그아웃 기능 구현하기  
+로그아웃 기능을 MVC로 변환하려면 우선 모든 페이지에서 logout_proc.jsp 라는 링크를 모두 logout.do 링크로 수정해야한다.    
+```
+~ 생략 ~ 
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>글 목록</title>
+</head>
+<body>
+	<center>
+		<h1>글 목록</h1>
+		<h3>
+			테스트님 환영합니다...<a href="logout.do">Log-out</a>
+		</h3>
+~ 생략 ~ 
+```   
+이밖에 getBoard.jsp와 insertBoard.jsp 파일에서도 logout_proc.jsp 라는     
+링크를 모두 logout.do 링크로 수정하자.   
+그리고 로그아웃 처리를 담당했던 logout_proc.jsp 파일의 자바 코드를    
+DispatcherServlet 클래스의 logout.do 분기 처리 부분으로 이동한다.       
+   
+**DispatcherServlet**
+```
+		} else if (path.equals("/logout.do")) {
+			System.out.println("로그아웃 처리");
+			// 1. 브라우저와 연결된 세션 객체를 강제 종료한다.  
+			HttpSession session = request.getSession();
+			session.invalidate();
+
+			// 2. 세션 종료 후, 메인 화면으로 이동한다.   
+			response.sendRedirect("login.jsp");
+		} else if (path.equals("/insertBoard.do")) {
+```
+이제 게시판과 관련된 모든 기능이 MVC 구조로 수정되었다.   
+그림 3-7은 지금까지 작업한 파일들이 MVC 아키텍처에서 어느 부분에 해당하는지 보여준다.     
+   
+먼저 Model 기능의 VO,DAO 클래스는 재사용되었고,   
+DispatcherServlet이라는 Controller 기능의 서블릿 클래스가 추가되었다.  
+가장 큰 변화는 View 기능의 JSP 파일인데, 우선 Controller 기능의 자바 로직을 DispatcherSerlvet 클래스로 이동했다.   
+따라서 xxx_proc.jsp 파일들은 모두 삭제해도 된다.  
+그리고 getBoard.jsp 와 getBoardList.jsp 파일에서도 Controller 자바 로직은 사라진 상태다.   
+즉, MVC 아키텍처를 적용한 결과 JSP에서 Controller 로직에 해당하는 자바 코드는 모두 제거되었다.
