@@ -399,9 +399,22 @@ public class DispatcherServlet extends HttpServlet {
 	}
 }
 ```
+수정된 DispatcherServlet 클래스에는 init() 메소드가 재정의되어 있다.  
+서블릿의 init() 메소드는 서블릿 객체가 생성된 후에 맴버변수를 초기화하기 위해 자동으로 실행된다.  
+따라서 init() 메소드에서 DispatcherSerlvet이 사용할 HandlerMapping와 ViewResolver객체를 초기화한다.  
 
-
-
+그리고 DispatcherServlet은 이렇게 생성된 HandlerMapping과 ViewResolver를 이용하여 사용자의 요청을 처리한다.   
+  
+가장 중요한 process() 메소드를 보면 클라이언트의 요청 path 정보를 추출하는 코드를 제외하고 코드 대부분이 수정되었다.  
+먼저 클라이언트의 요청 path에 해당하는 Controller를 검색하기 위해 HandlerMapping 객체의 getController() 메소드를 호출한다.  
+그러고 나서 검색된 Controller의 handleRequest() 메소드를 호출하여  
+요청에 해당하는 로직을 처리하고 나면 이동할 화면 정보가 리턴된다.    
+  
+마지막으로 Controller가 리턴한 View 이름을 이용하여 실행될 View를 찾아 해당 화면으로 이동한다.   
+다음은 지금까지 개발한 로그인 기능이 동작하는 과정을 그림으로 표현한 것이다.  
+   
+[그림]   
+      
 ***
 # 3. 대주제
 > 인용
