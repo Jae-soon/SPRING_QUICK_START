@@ -192,11 +192,215 @@ DispatcherServlet 클래스가 이렇게 복잡하게 구현되어 있으면 특
 ***
 # 2. MVC 프레임워크 구현
 ## 2.1. Controller 인터페이스 작성
-Controller를 구성하는 요소 중에서 Dispatcher
-### 2.1.1. 내용1
+Controller를 구성하는 요소 중에서 DispatcherServlet은 클라이언트의 요청을 가장 먼저 받아들이는 Front Controller 이다.  
+하지만 클라이언트의 요청을 처리하기 위해 DispatcherServlet이 하는 일은 거의 없으며,    
+실질적인 요청 처리는 각 Controller에서 담당한다.  
+  
+구체적인 Controller 클래스들을 구현하기에 앞서 모든 Controller를 같은 타입으로 관리하기 위한 인터페이스를 만들어야한다.  
+클라이언트의 요청을 받은 DispatcherServlet은 HandlerMapping을 통해 Controller 객체를 검색하고, 검색된 Controller를 실행한다.   
+이때 어떤 Controller 객체가 검색되더라도 같은 코드로 실행하려면 모든 Controller의 최상위 인터페이스가 필요하다.  
+   
+**Controller**
 ```
-내용1
+package com.springbook.view.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public interface Controller {
+	String HandlerRequset(HttpServletRequest request, HttpServletResponse response);
+}
+```
+## 2.2. LoginController 
+Controller 인터페이스를 구현한 LoginController 클래스를 만들고
+이를 구현하는 Controller 클래스를 작성해주면 된다.   
+이때 DispatcherServlet 클래스에서 ```/login.do```에 해당하는 소스를 복사하여 구현해보자   
+
+**LoginController**
+```
+package com.springbook.view.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.springbook.biz.user.UserVO;
+import com.springbook.biz.user.impl.UserDAO;
+
+public class LoginController implements Controller {
+	@Override
+	public String HandlerRequset(HttpServletRequest request, HttpServletResponse response) {
+		System.out.println("로그인 처리");
+
+		// 1. 사용자 입력 정보 추출
+		String id = request.getParameter("id");
+		String password = request.getParameter("password");
+
+		// 2. DB 연동 처리
+		UserVO vo = new UserVO();
+		vo.setId(id);
+		vo.setPassword(password);
+
+		UserDAO userDAO = new UserDAO();
+		UserVO user = userDAO.getUser(vo);
+
+		// 3. 화면 네비게이션
+		if (user != null) {
+			return "getBoardList.do";
+		} else {
+			return "login";
+		}		
+	}
+}
 ```   
+로그인 처리 소스는 DispatcherServlet의 로그인 처리 기능과 같다.     
+다만, Controller 인터페이스의 handleRequest()메소드를 재정의 했으므로    
+로그인 처리 기능의 마지막은 이동할 화면을 리다이렉트 하지 않고 리턴하는 것으로 처리한다.    
+  
+그런데 로그인에 실패했을 때 이동할 화면 정보가 login,jsp가 아니라 그냥 login이다.      
+이는 나중에 추가할 ViewResolve 클래스를 만들어야 정확하게 이해할 수 있으니     
+여기서는 단지 handleRequest() 메소드가 확장자 없는 문자열을 리턴하면,      
+자동으로 ```.jsp```확장자가 붙어서 처리된다는 것만 이해하자    
+
+## 2.3. HandlerMapping 클래스 작성 
+HandlerMapping은 모든 Controller 객체들을 저장하고 있다가,  
+클라이언트의 요청이 들어오면 요청을 처리할 특정 Controller를 검색하는 기능을 제공한다.  
+    
+HandlerMapping 객체는 DispatcherSerlvet이 사용하는 객체이다.    
+따라서 DisaptcherServlet이 생성되고 init()메소드가 호출될 때 단 한번 생성된다.  
+
+**HandlerMapping**
+```
+package com.springbook.view.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class HandlerMapping {
+	private Map<String, Controller> mappngs;
+	
+	public HandlerMapping() {
+		mappngs = new HashMap<String, Controller>();
+		mappngs.put("/login.do", new LoginController());
+	}
+	
+	public Controller getController(String path) {
+		return mappngs.get(path);
+	}
+
+}
+```
+HandlerMapping은 Map 타입의 컬렉션을 맴버변수로 가지고 있으면서   
+게시판 프로그램에 필요한 모든 Controller 객체들을 등록하고 관리한다.    
+   
+getController() 메소드는 매개변수로 받은 path에 해당하는 Controller 객체를 HashMap 컬렉션으로부터 검색하여 리턴한다.   
+지금은 LoginController 객체 하나만 등록되어 있지만, 앞으로 계속 Controller 객체들이 추가될 것이다.  
+따라서 HashMap에 등록된 정보를 보면 Controller 객체가 어떤 ```.do```요청과 매핑되어있는지 확인할 수 있다.  
+
+## 2.4. ViewResolver 클래스 작성 
+ViewResolver 클래스는 Controller가 리턴한 View 이름에 접두사와 접미사를 결합하여 최종으로 실행될 View 경로와 파일명을 완성한다.     
+ViewResolver도 HandlerMapping과 마찬가지로 DispatcherServlet의 init()메소드가 호출될 때 생성된다.      
+   
+**ViewResolve**
+```
+package com.springbook.view.controller;
+
+public class ViewResolve {
+
+	public String prefix;
+	public String suffix;
+
+	public void setPrefix(String prefix) {
+		this.prefix = prefix;
+	}
+
+	public void setSuffix(String suffix) {
+		this.suffix = suffix;
+	}
+
+	public String getView(String viewName) {
+		return prefix + viewName + suffix;
+	}
+
+}
+```
+ViewResovle는 setPrefix()와 setSuffix() 메소드로 접두사(prefix)와 접미사(suffix)를 초기화한다.  
+그리고 getView() 메소드가 호출될 때 viewName 앞에 prefix를 결합하고  
+viewName 뒤에 suffix를 결합하여 리턴한다.  
+  
+## 2.5. DispatcherServlet 수정   
+DispatcherSerlvet은 FrontController 기능의 클래스로서 Controller 구성 요소 중 가장 중요한 역할을 수행한다.  
+지금부터 DispatcherServlet 클래스를 수정해야 하는데,  
+수정하기 전에 바탕화면이나 다른곳에 복사본을 만들어 놓아야한다.  
+그래야 나중에 구체적인 Controller 클래스 구현에서 소스를 재사용할 수 있다.   
+
+**DispatcherSerlvet**
+```
+package com.springbook.view.controller;
+
+import java.io.IOException;
+import java.util.List;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+import com.springbook.biz.user.UserVO;
+import com.springbook.biz.user.impl.UserDAO;
+
+public class DispatcherServlet extends HttpServlet {
+	private static final long serialVersionUID = 1L;
+	private HandlerMapping handlermapping;
+	private ViewResolve viewResolve;
+
+	@Override
+	public void init() throws ServletException {
+		handlermapping = new HandlerMapping();
+		viewResolve = new ViewResolve();
+		viewResolve.setPrefix("./");
+		viewResolve.setPrefix(".jsp");
+	}
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		process(request, response);
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		request.setCharacterEncoding("UTF-8");
+		process(request, response);
+	}
+
+	private void process(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		// 1. 클라이언트의 요청 path 정보를 추출한다.
+		String uri = request.getRequestURI(); // request가 사용한 uri 얻기 여기서는 do동작시 가져오기에 제각기이다.
+		String path = uri.substring(uri.lastIndexOf("/")); // 시작위치가 /부터 된다. 즉 /포함 이후 글자 얻어내기
+
+		// 2. HandlerMapping을 통해 path에 해당하는 Controller를 검색한다.
+		Controller ctrl = handlermapping.getController(path); // 그럼 /login.do가 가서 mapping된 객체 가져온다.
+
+		// 3. 검색된 Controller를 실행한다.
+		String viewName = ctrl.HandlerRequset(request, response);
+
+		// 4.
+		String view = null;
+		if (!viewName.contains(".do")) {
+			view = viewResolve.getView(viewName);
+		} else {
+			view = viewName;
+		}
+
+		// 5. 검색된 화면으로 이동한다.
+		response.sendRedirect(view);
+	}
+}
+```
+
+
 
 ***
 # 3. 대주제
