@@ -414,7 +414,14 @@ public class DispatcherServlet extends HttpServlet {
 다음은 지금까지 개발한 로그인 기능이 동작하는 과정을 그림으로 표현한 것이다.  
    
 [그림]   
-      
+
+1. 클라이언트가 로그인 버튼을 클릭하여 ```/login.do```요청을 전송하면 DispatcherSerlvet이 요청을 받는다. 
+2. DispatcherSerlvet은 HandlerMapping 객체를 통해 로그인 요청을 처리할 LoginController를 검색하고,  
+3. 검색된 LoginController의 handleRequest() 메소드를 호출하면 로그인 로직이 처리된다.  
+4. 로그인 처리 후에 이동할 화면 정보가 리턴되면 
+5. DispatcherServlet은 ViewResolve를 통해 접두사와 접미사가 붙은 JSP 파일의 이름과 경로를 리턴받는다.
+6. 그리고 최종적으로 JSP를 실행하고 실행 결과가 브라우저에 응답된다.  
+
 ***
 # 3. 대주제
 > 인용
