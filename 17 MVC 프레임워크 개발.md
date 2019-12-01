@@ -423,10 +423,404 @@ public class DispatcherServlet extends HttpServlet {
 6. 그리고 최종적으로 JSP를 실행하고 실행 결과가 브라우저에 응답된다.  
 
 ***
-# 3. 대주제
-> 인용
-## 3.1. 소 주제
-### 3.1.1. 내용1
+# 3. MVC 프레임워크 적용
+## 3.1. 글 목록 검색 구현
+Controller 인터페이스를 구현한 GetBoardListController 클래스를 작성한다.
+이때 다른 폴더에 복사했던 DispatcherSerlvet에서 글 목록 검색 관련 소스를 복사하여 쉽게 구현할 수 있다.  
+
+**GetBoardListController**
 ```
-내용1
+package com.springbook.view.controller;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class GetBoardListController implements Controller {
+@Override
+public String HandlerRequset(HttpServletRequest request, HttpServletResponse response) {
+	System.out.println("글 목록 검색 처리");
+	// 1. 사용자 입력 정보 추출(검색 기능은 나중에 구현)
+	// 2. DB 연동처리
+	BoardVO vo = new BoardVO();
+	BoardDAO boardDAO = new BoardDAO();
+	List<BoardVO> boardList = boardDAO.getBoardList(vo);
+	
+	// 3. 검색 결과를 세션에 저장하고 목록 화면으로 이동한다.  
+	HttpSession session = request.getSession();
+	session.setAttribute("boardList", boardList);
+	return "getBoardList";
+	}
+}
 ```
+DispatcherServlet 소스를 복사해서 구현했으므로 기본 소스는 같다.     
+다만, 마지막에 글 목록을 출력할 JSP 이름을 확장자 없이 리턴하고 있는데,    
+이는 ViewResolver를 이용하여 View 이름을 완성하기 때문에 생략한 것이다.      
+      
+이제 GetBoardListController 객체를 HadlerMapping에 등록하면 된다.  
+    
+**HandlerMapping**
+```
+package com.springbook.view.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class HandlerMapping {
+	private Map<String, Controller> mappngs;
+	
+	public HandlerMapping() {
+		mappngs = new HashMap<String, Controller>();
+		mappngs.put("/login.do", new LoginController());
+		mappngs.put("/getBoardList.do", new GetBoardListController());		
+	}
+	
+	public Controller getController(String path) {
+		return mappngs.get(path);
+	}
+
+}
+```
+작성된 모든 소스를 저장하고 로그인 성공 후에 글 목록 화면이 정상으로 출력되는지 확인한다.  
+  
+
+## 3.2. 글 상세 보기 구현   
+Controller 인터페이스를 구현한 GetBoardController 클래스를 작성한다.    
+이때 DispatcherServlet에서 글 상세 조회 관련 소스를 복사하여 handleRequest() 메소드를 구현한다.    
+  
+**GetBoardController**
+```
+package com.springbook.view.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class GetBoardController implements Controller {
+@Override
+public String HandlerRequset(HttpServletRequest request, HttpServletResponse response) {
+	
+	System.out.println("글 상세 조회 처리");
+	
+	// 1. 검색할 게시글 번호 추출
+	String seq = request.getParameter("seq");
+
+	// 2. DB 연동 처리
+	BoardVO vo = new BoardVO();
+	vo.setSeq(Integer.parseInt(seq));
+
+	BoardDAO boardDAO = new BoardDAO();
+	BoardVO board = boardDAO.getBoard(vo);
+	
+	// 3. 응답 화면 구성
+	HttpSession session = request.getSession();
+	session.setAttribute("board", board);
+	return "getBoard";
+	}
+}
+```
+GetBoardController 역시 DispatcherSerlvet 소스를 복사해서 구현했으므로 기본소스는 같다.      
+그리고 글 상세 화면으로 이동할 대 역시 ViewResolver를 이용하기 때문에 확장자 ```.jsp```를 생략했다.      
+GetBoardController 객체도 HanlderMapping 클래스에 등록한다.  
+      
+**HandlerMapping**
+```
+package com.springbook.view.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class HandlerMapping {
+	private Map<String, Controller> mappngs;
+	
+	public HandlerMapping() {
+		mappngs = new HashMap<String, Controller>();
+		mappngs.put("/login.do", new LoginController());
+		mappngs.put("/getBoardList.do", new GetBoardListController());		
+		mappngs.put("/getBoard.do", new GetBoardController());		
+
+	}
+	
+	public Controller getController(String path) {
+		return mappngs.get(path);
+	}
+
+}
+```
+## 3.3. 글 등록 구현  
+DispatcherServlet에서 글 등록 관련 소스를 복사하여 InsertBoardController 클래스를 작성한다.  
+  
+**inserBoardController**
+```
+package com.springbook.view.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class InsertBoardController implements Controller {
+	@Override
+	public String HandlerRequset(HttpServletRequest request, HttpServletResponse response) {
+		System.out.println("글 등록 처리");
+
+		// request.setCharacterEncoding("UTF-8");
+		String title = request.getParameter("title");
+		String writer = request.getParameter("writer");
+		String content = request.getParameter("content");
+
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setTitle(title);
+		vo.setWriter(writer);
+		vo.setContent(content);
+
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.insertBoard(vo);
+
+		// 3. 화면 네비게이션
+		return "getBoardList.do";
+	}
+}
+```
+insertBoardController 역시 DispatcherServlet 소스를 복사해서 구현했으므로 기능은 같다.  
+다만, HandleRequest() 메소드가 글 등록 작업을 처리한 후에 getboardList.do 문자열을 리턴하는 부분이 중요한데,  
+글 등록에 성공하면 등록된 글이 포함된 글 목록을 다시 검색해야한다.  
+따라서 getBoardList.do 문자열을 리턴한여 리다이렉트 처리한 것이다.  
+  
+InsertBoardController 객체를 HandlerMapping 클래스에 등록하고 글 등록을 실행해본다.  
+   
+**HandlerMapping**
+```
+package com.springbook.view.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class HandlerMapping {
+	private Map<String, Controller> mappngs;
+	
+	public HandlerMapping() {
+		mappngs = new HashMap<String, Controller>();
+		mappngs.put("/login.do", new LoginController());
+		mappngs.put("/getBoardList.do", new GetBoardListController());		
+		mappngs.put("/getBoard.do", new GetBoardController());		
+		mappngs.put("/insertBoard.do", new InsertBoardController());		
+	}
+	
+	public Controller getController(String path) {
+		return mappngs.get(path);
+	}
+}
+```
+## 3.4. 글 수정 구현
+DispatcherServlet에서 글 수정 관련 소스를 복사하여 UpdateBoardController 클래스를 작성한다.  
+   
+**UpdateBoardController**
+```
+package com.springbook.view.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class UpdateBoardController implements Controller{
+	@Override
+	public String HandlerRequset(HttpServletRequest request, HttpServletResponse response) {
+	
+		System.out.println("글 수정 처리");
+		// 1. 사용자 입력 정보 추출 
+		
+		// request.setCharacterEncoding("UTF-8");
+		String title = request.getParameter("title");
+		String content = request.getParameter("content");
+		String seq = request.getParameter("seq");
+		
+		
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setTitle(title);
+		vo.setContent(content);
+		vo.setSeq(Integer.parseInt(seq));
+		
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.updateBoard(vo);
+		
+		// 3. 화면 네비게이션
+		return "getBoardList.do";
+	}
+
+}
+```
+UpdateboardController 역시 글 수정 성공 후에 글 목록을 다시 검색하여 목록 화면을 갱신해야하므로 getBoardList.do를 리턴한다.   
+작성된 UpdateBoardController 객체를 HandelrMapping에 등록한다.  
+
+**HandlerMapping**
+```
+package com.springbook.view.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class HandlerMapping {
+	private Map<String, Controller> mappngs;
+	
+	public HandlerMapping() {
+		mappngs = new HashMap<String, Controller>();
+		mappngs.put("/login.do", new LoginController());
+		mappngs.put("/getBoardList.do", new GetBoardListController());		
+		mappngs.put("/getBoard.do", new GetBoardController());		
+		mappngs.put("/insertBoard.do", new InsertBoardController());		
+		mappngs.put("/updateBoard.do", new UpdateBoardController());		
+
+	}
+	
+	public Controller getController(String path) {
+		return mappngs.get(path);
+	}
+
+}
+```
+## 3.5. 글 삭제 구현
+DispatcherServlet에서 글 삭제 관련 소스를 복사하여 DeleteBoardController 클래스를 작성한다.  
+
+**DeleteBoardController**
+```
+package com.springbook.view.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class DeleteBoardController implements Controller {
+	@Override
+	public String HandlerRequset(HttpServletRequest request, HttpServletResponse response) {
+		
+		System.out.println("글 삭제 처리");
+		
+		// 1. 사용자 입력 정보 추출 
+		//request.setCharacterEncoding("UTF-8");
+		String seq = request.getParameter("seq");
+		
+		
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setSeq(Integer.parseInt(seq));
+		
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.deleteBoard(vo);
+		
+		// 3. 화면 네비게이션
+		return "getBoardList.do";
+	}
+}
+```
+작성된 DeleteBoardController 객체를 HandlerMapping에 등록한다.  
+
+**HandlerMapping**
+```
+package com.springbook.view.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class HandlerMapping {
+	private Map<String, Controller> mappngs;
+	
+	public HandlerMapping() {
+		mappngs = new HashMap<String, Controller>();
+		mappngs.put("/login.do", new LoginController());
+		mappngs.put("/getBoardList.do", new GetBoardListController());		
+		mappngs.put("/getBoard.do", new GetBoardController());		
+		mappngs.put("/insertBoard.do", new InsertBoardController());		
+		mappngs.put("/updateBoard.do", new UpdateBoardController());		
+		mappngs.put("/deleteBoard.do", new DeleteBoardController());		
+	}
+	
+	public Controller getController(String path) {
+		return mappngs.get(path);
+	}
+
+}
+``` 
+
+## 3.6. 로그아웃 구현
+DispatcherServlet에서 로그아웃 관련 소스를 복사하여 LogoutController 클래스를 작성한다.  
+   
+**LogoutController**
+```
+package com.springbook.view.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+public class LogoutController implements Controller{
+@Override
+public String HandlerRequset(HttpServletRequest request, HttpServletResponse response) {
+	System.out.println("로그아웃 처리");
+	// 1. 브라우저와 연결된 세션 객체를 강제 종료한다.  
+	HttpSession session = request.getSession();
+	session.invalidate();
+
+	// 2. 세션 종료 후, 메인 화면으로 이동한다.   
+	return "login";
+	}
+}
+```
+LogoutController 객체 역시 HandlerMapping에 등록한다.  
+   
+**HandlerMapping**   
+```
+package com.springbook.view.controller;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class HandlerMapping {
+	private Map<String, Controller> mappngs;
+	
+	public HandlerMapping() {
+		mappngs = new HashMap<String, Controller>();
+		mappngs.put("/login.do", new LoginController());
+		mappngs.put("/getBoardList.do", new GetBoardListController());		
+		mappngs.put("/getBoard.do", new GetBoardController());		
+		mappngs.put("/insertBoard.do", new InsertBoardController());		
+		mappngs.put("/updateBoard.do", new UpdateBoardController());		
+		mappngs.put("/deleteBoard.do", new DeleteBoardController());		
+		mappngs.put("/logout.do", new LogoutController());		
+	}
+	
+	public Controller getController(String path) {
+		return mappngs.get(path);
+	}
+
+}
+```
+  
+지금까지 새롭게 추가하거나 작성된 파일들의 구조를 보면 다음과 같다.  
+본인이 작성한 파일들의 위치와 맞는지 다시 한번 확인한다.  
+   
+Controller를 구성하는 클래스를 모두 개발하고 나면, 너무나 복잡한 구조와 수많은 클래스 때문에 오히려 더 혼란스러울 수 있다.  
+그런데도 Controller를 이렇게 복잡하게 구현하는 이유는 뭘까?    
+우선 Controller에서 가장 중요한 DispatcherServlet클래스는 유지보수 과정에서   
+기존의 기능을 수정하거나 새로운 기능을 추가하더라도 절대 수정되지 않는다.  
+  
+예를 들어, 게시판에 회원가입 기능을 추가한다고 하자,     
+이때 InsertUserController 클래스를 추가로 작성하고, HandlerMapping에 InsertuserController 객체를 등록하면 된다.     
+이 과정에서 DispatcherServlet 클래스는 전혀 수정할 필요가 없다.        
+이렇게 기능 추가나 수정에 대해서 DispatcherServlet을 수정하지 않도록 해야    
+프레임에서 DispatcherSerlvet을 제공할 수 있는 것이다.    
