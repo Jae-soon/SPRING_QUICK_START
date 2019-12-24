@@ -47,7 +47,54 @@ WEB-INF/web.xml 파일에 등록된 DispatcherServlet 클래스를 스프링 프
 		<url-pattern>*.do</url-pattern>
 	</servlet-mapping>
 </web-app>
+```  
+## 2.2. 스프링 컨테이너 구동  
+클라이언트의 요청으로 DispatcherServlet 객체가 생성되고 나면  
+DispatcherServlet 클래스에 재정의된 Init() 메소드가 자동으로 실행되어   
+XmlWebApplicationContext라는 스프링 컨테이너가 구동된다.
+  
+XmlWebApplicationContext는 AppicationContext를 구현한 클래스중 하나이다.  
+하지만 XmlWebApplicationContext는 우리가 직접 생성하는 것이 아니라 DispatcherServlet이 생성한다.  
+
+SpringMVC의 구성 요소 중에서 DispatcherServlet 클래스가 유일한 서블릿이다.  
+따라서 서블릿 컨테이너는 web.xml 파일에 등록된 DispatcherServlet만 생성해준다.    
+   
+하지만 DispatcherServlet 객체 혼자서는 클라이언트의 요청을 처리할 수 없고,   
+반드시 HandlerMapping, Controller, ViewResolver 객체들과 상호작용해야 한다.  
+이 객체들을 메모리에 생성하기 위해서 DispatcherServlet은 스프링 컨테이너를 구동하는 것이다.    
+
+우리가 직접 DispatcherServlet 클래스를 개발했을 때는 ```init()``` 메소드에서   
+DispatcherServlet이 사용하는 HandlerMapping, Controller, ViewResolver 객체들을 생성했다.    
+다만, 스프링에서 제공하는 DispatcherServlet은 스프링 컨테이너를 통해 이 객체들을 생성하는것이 다를 뿐이다.  
 ```
+결국 DispatcherServlet은 클라이언트의 요청 처리에 필요한  
+HandlerMapping, Controller, ViewResolver 객체들을 생성하기 위해 스프링 컨테이너를 구동한다.  
+``` 
+서블릿 컨테이너가 DispatcherServlet 객체를 생성하고 나면 재정의된 init() 메소드가 자동으로 실행된다.    
+그러면 init() 메소드는 스프링 설정 파일을 로딩하여 XmlWebApplicationContext를 생성한다.   
+즉, 스프링 컨테이너가 구동되는 것이다.  
+결국 스프링 설정 파일에 DispatcherServlet이 사용할 HandlerMapping, Controller, ViewResolver 클래스를 
+```<bean>```에 등록하면 스프링 컨테이너가 해당 객체들을 생성해준다.  
+```
+그렇다면 우리는 스프링 설정파일에 해당 클래스들을 등록해주자
+```
+## 2.3. 스프링 설정 파일 등록
+아무것도 조작하지 않은 현재 상태에서는 DispatcherServlet 이 스프링 컨테이너를 구동할 때 무조건
+```/WEB-INF/action-servlet.xml```파일을 찾아 로딩한다.   
+하지만 해당 위치에 ```action-servlet.xml``` 없으므로 FileNotFoundException이 발생한다.   
+
+DispathcerServlet은 Spring 컨테이너를 구동할 때, web.xml 파일에 등록된 서블릿 이름 뒤에  
+```-servlet.xml```을 붙여서 스프링 설정 파일을 찾는다.   
+따라서 ```web.xml```파일에 등록된 DispatcherServlet 이름이 dispatcher였다면 ```/WEB-INF/dispatcher-servlet.xml```파일을 찾았을 것이다.  
+
+이제 DispatcherServlet이 스프링 컨테이너를 구동할 때 로딩할 스프링 설정 파일을 추가하자.  
+   
+1. 이클립스의 프로젝트 탐색 창에서 WEB-INF 폴더에 마우스 오른쪽 버튼을 클릭하여 ```[New]->[Other]```메뉴를 선택한다.   
+2. Spring 폴더에서 'Spring Bean configuration file'을 선택하고 ```<Next>```를 클릭한다.  
+3. 'File name'에 'action-servlet.xml'파일명을 입력하고 ```<Finish>```를 클릭하면 WEB-INF 폴더에 action-servlet.xml 파일이 생성된다.  
+3. 다시 서버를 재구동 해야한다.  
+
+
 
 ***
 # 3. 대주제
