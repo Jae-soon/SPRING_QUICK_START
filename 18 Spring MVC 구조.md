@@ -93,14 +93,107 @@ DispathcerServlet은 Spring 컨테이너를 구동할 때, web.xml 파일에 등
 2. Spring 폴더에서 'Spring Bean configuration file'을 선택하고 ```<Next>```를 클릭한다.  
 3. 'File name'에 'action-servlet.xml'파일명을 입력하고 ```<Finish>```를 클릭하면 WEB-INF 폴더에 action-servlet.xml 파일이 생성된다.  
 3. 다시 서버를 재구동 해야한다.  
+   
+***
+# 3. 스프링 설정 파일 변경
+DispatcherServlet은 자신이 사용할 객체들을 생성하기 위해서 스프링 컨테이너를 구동한다.    
+이때 스프링 컨테이너를 위한 설정 파일의 이름과 위치는 서블릿 이름을 기준으로 자동으로 결정된다.   
+하지만 필요에 따라서는 설정 파일의 이름을 바꾸거나 위치를 변경할 수도 있다.   
+이때 서블릿 초기화 파라미터를 이용하면 된다.  
 
+1. WEB-INF 폴더 밑에 config 폴더 생성
+2. action-servlet.xml을 config로 이동
+3. action-servlet.xml 이름을 presentation-layer.xml로 바꾼다.  
+4. webxml 파일을 열어서 DispatcherSerlvet 클래스를 등록한 곳에 ```<init-param>``` 설정을 추가한다.
+5. ```<param-name>```엘리먼트로 지정한 contextConfigLocation은 대소문자를 구분하므로 정확하게 등록해야 한다.  
 
+**web.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee https://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+	<servlet>
+		<servlet-name>hello</servlet-name>
+		<servlet-class>hello.HelloServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>hello</servlet-name>
+		<url-pattern>/hello.do</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>action</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>/WEB-INF/config/presentaion-layer.xml</param-value>	
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>action</servlet-name>
+		<url-pattern>*.do</url-pattern>
+	</servlet-mapping>
+</web-app>
+```
+이렇게 DispatcherServlet을 설정하면 컨테이너가 DispatcherServlet 객체를 생성한 후, init() 메소드를 호출한다.  
+그리고 contextConfigLocation이라는 파라미터로 설정한 정보를 추출하여 스프링 컨테이너를 구동할 때 사용한다.  
 
 ***
-# 3. 대주제
-> 인용
-## 3.1. 소 주제
-### 3.1.1. 내용1
+# 4. 인코딩 설정
+web.xml 파일에 DispatcherSerlvet 클래스를 등록했으면  
+마지막으로 인코딩 설정과 관련된 필터 클래스를 추가하면 좋다.  
+  
+현재 상태에서는 SpringMVC를 적용하여 글 등록이나 수정 기능을 구현하면 한글을 처리하지 못하고 깨진다.  
+이는 web.xml 파일에 등록된 DispatcherServlet 클래스를 우리가 만들지 않았기 때문이다(해외 라이브러리 사용이니..)  
+     
+앞에서 우리가 작성한 DispatcherServlet 클래스에서는 POST 방식의 요청에 적절하게 인코딩 처리를 하고 있다.     
 ```
-내용1
+request.setCharacterEncoding("UTF-8");
 ```
+스프링에서는 인코딩 처리를 위해 CharacterEncodingFilter 클래스를 제공하며,  
+web.xml 파일에 CharacterEncodingFilter를 등록하면 모든 클라이언트의 요청에 대해서 일괄적으로 인코딩을 처리할 수 있다.  
+   
+web.xml 파일에 CharacterEncodingFilter 클래스를 필터로 등록하자  
+  
+**web.xml**  
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee https://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+
+	<filter>
+		<filter-name>characterEncoding</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>characterEncoding</filter-name>
+		<url-pattern>*.do</url-pattern>
+	</filter-mapping>
+
+	<servlet>
+		<servlet-name>action</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>/WEB-INF/config/presentaion-layer.xml</param-value>	
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>action</servlet-name>
+		<url-pattern>*.do</url-pattern>
+	</servlet-mapping>
+</web-app>
+```
+필터는 엘리먼트 이름만 다를 뿐, 서블릿과 거의 비슷한 형태로 등록한다.  
+따라서 characterEncoding이라는 이름으로 등록한 CharacterEncodingFilter 객체가 생성되고 나면   
+```<init-param>```으로 설정한 encoding 파라미터 정보를 읽어 인코딩 방식을 설정한다.  
+그리고 ```<filter-mapping>```에서 ```<url-pattern>``` 설정을 ```*.do```로 했으므로  
+모든 클라이언트의 ```.do```요청에 대해서 ```CharacterEncodingFilter```객체가 일괄적으로 한글을 처리한다.  
