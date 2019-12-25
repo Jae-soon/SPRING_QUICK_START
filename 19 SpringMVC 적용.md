@@ -179,3 +179,14 @@ SimpleUrlHandlerMapping에 매핑 정보를 추가하면 된다.
 
 </beans>
 ```
+1. 클라이언트로부터 ```/getBoardList.do```요청을 전송하면 DispatcherServlet이 요청을 받고, 
+2. SimpleUrlHandlerMapping을 통해 요청을 처리할 GetBoardListController를 검색한다.  
+3. DispatcherServlet은 검색된 GetBoardListController를 실행하여 요청을 처리한다.
+4. GetBoardListController는 검색 결과인 ```List<BoardVO>```와 getBoardList.jsp 이름을 ModelAndView객체에 저장하여 리턴한다.
+5. DispatcherServlet은 ModelAndView로부터 View 정보를 추출하고 ViewResolver를 이용하여 응답으로 사용할 getBoardList.jsp를 검색한다.
+6. DispatcherServlet은 getBoardList.jsp를 실행하여 글 목록 화면을 전송한다.  
+   
+***
+# 4. 글 상세 조회 기능 구현
+## 4.1. GetBoardController 구현   
+게시글 상세 조회 기능을 구현하기 위해서 GetBoardCotroller를 다음과 같이 수정한다.   
