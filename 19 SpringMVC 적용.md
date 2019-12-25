@@ -485,3 +485,349 @@ ViewResolver 역시 여러가지가 있지만 JSP를 View로 사용하는 경우
 ## 9.1. ViewResolver 적용  
 먼저 ```/WEB-INF/board```폴더를 생성하고,  
 기존에 사용했던 목록 화면과 상세 화면에 해당하는 getBoardList.jsp와 getBoard.jsp 파일을 이동시킨다.  
+   
+[사진]     
+   
+WEB-INF 폴더는 절대 브라우저에서 접근할 수 없다.  
+이제 WEB-INF 폴더로 이동한 JSP 파일들은 절대 클라이언트 브라우저에서 접근할 수 없다.  
+하지만 InternalResourceViewResolver를 다음과 같이 설정하면 WEB-INF 폴더에 있는 JSP 파일을 View 화면으로 사용할 수 있다.  
+결과적으로 직접적인 JSP 호출을 차단하게 된다.  
+
+**presentation-layer.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<!-- HandlerMapping 등록 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+		<property name="mappings">
+			<props>
+				<prop key="/login.do">login</prop>
+				<prop key="/logout.do">logout</prop>
+				<prop key="/getBoardList.do">getBoardList</prop>
+				<prop key="/getBoard.do">getBoard</prop>
+				<prop key="/insertBoard.do">insertBoard</prop>
+				<prop key="/updateBoard.do">updateBoard</prop>
+				<prop key="/deleteBoard.do">deleteBoard</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- Controller 등록 -->
+	<bean id="login" class="com.springbook.view.user.LoginController"></bean>
+	<bean id="logout" class="com.springbook.view.user.LogoutController"></bean>
+	<bean id="getBoardList" class="com.springbook.view.board.GetBoardListController"></bean>
+	<bean id="getBoard" class="com.springbook.view.board.GetBoardController"></bean>
+	<bean id="insertBoard" class="com.springbook.view.board.InsertBoardController"></bean>
+	<bean id="updateBoard" class="com.springbook.view.board.UpdateBoardController"></bean>
+	<bean id="deleteBoard" class="com.springbook.view.board.DeleteBoardController"></bean>
+	
+	<!-- ViewResolver -->
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/board/"></property>
+		<property name="suffix" value=".jsp"></property>
+	</bean>
+</beans>
+```
+다시 로그인 기능을 실행해보면 이전까지 잘 실행되던 프로그램이 실행되지 않을 것이다.  
+만약 로그인에 실패하면 ```/WEB-INF/board/login.jsp.jsp```파일을 실행하고,
+로그인에 성공하면 ```/WEB-INF/board/getBoardList.do.jsp```라는 파일을 실행하기 때문이다.    
+
+## 9.2. Controller 수정
+ViewResolver를 적용했을 때, ModelAndView 객체에 저장되는 View 이름은 ViewResolver 설정을 고려하여 등록해야 한다.  
+따라서 앞에서 작성한 LoginController 클래스의 화면 네비게이션 코드를 다음처럼 수정한다.  
+   
+**LoginController**
+```
+package com.springbook.view.user;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.user.UserVO;
+import com.springbook.biz.user.impl.UserDAO;
+
+public class LoginController implements Controller {
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		System.out.println("로그인 처리");
+
+		// 1. 사용자 입력 정보 추출
+		String id = request.getParameter("id");
+		String password = request.getParameter("password");
+
+		// 2. DB 연동 처리
+		UserVO vo = new UserVO();
+		vo.setId(id);
+		vo.setPassword(password);
+
+		UserDAO userDAO = new UserDAO();
+		UserVO user = userDAO.getUser(vo);
+
+		// 3. 화면 네비게이션
+		ModelAndView mav = new ModelAndView();
+		if (user != null) {
+			mav.setViewName("redirect:getBoardList.do");
+		} else {
+			mav.setViewName("redirect:login.jsp");
+		}
+		return mav;
+	}
+}
+```
+로그인에 성공하거나 실패했을 때 View 이름앞에 ```redirect:```을 붙여서 지정해야 한다.   
+이렇게 하면 ViewResolver가 설정되어 있더라도 이를 무시하고 리다이렉트한다.   
+그리고 로그인에 성공했을 때 실행되는 GetBoardListController에서는 확장자 ```.jsp``` 를 제거해야 한다.
+
+**GetBoardListController**
+```
+package com.springbook.view.board;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+// import javax.servlet.http.HttpSession;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class GetBoardListController implements Controller {
+
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		System.out.println("글 목록 검색 처리");
+		
+		// 1. 사용자 입력 정보 추출(검색 기능은 나중에 구현)
+		// 2. DB 연동처리
+		BoardVO vo = new BoardVO();
+		BoardDAO boardDAO = new BoardDAO();
+		List<BoardVO> boardList = boardDAO.getBoardList(vo);
+		
+		// 3. 검색 결과를 세션에 저장하고 목록 화면으로 이동한다.  
+		ModelAndView mav = new ModelAndView();
+		mav.addObject("boardList", boardList); //모델 정보 입력
+		mav.setViewName("getBoardList"); // 뷰 정보 입력
+		
+		return mav;
+	/*
+		HttpSession session = request.getSession();
+		session.setAttribute("boardList", boardList);
+		return "getBoardList.jsp";
+	*/	
+	}
+}
+```
+게시글 목록을 검색하고 나면 getBoardList.jsp 파일이 실행되어야 한다.   
+이때 확장자 ```.jsp```를 생략하면 ViewResolver가 접두사와 접미사를 적절히 할당하여  
+```/WEB-INF/board/gegtBoardList.jsp```파일을 실행한다.    
+  
+결국, InternalResourceViewResolver를 등록했을 때는 모든 View 이름에서 확장자 ```.jsp```를 제거해야 한다.  
+그리고 확장자가 ```.do```인 요청은 앞에 ```redirect:```을 붙여서 ViewResolver가 동작하지 않도록 해야한다.  
+  
+상세 정보를 출력하는 GetBoardController 클래스도 View 이름을 getBoard로만 설정하면 된다.    
+   
+**getBoardController**
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class GetBoardController implements Controller {
+	
+@Override
+public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	System.out.println("글 상세 조회 처리");
+	
+	// 1. 검색할 게시글 번호 추출
+	String seq = request.getParameter("seq");
+
+	// 2. DB 연동 처리
+	BoardVO vo = new BoardVO();
+	vo.setSeq(Integer.parseInt(seq));
+
+	BoardDAO boardDAO = new BoardDAO();
+	BoardVO board = boardDAO.getBoard(vo);
+	
+	// 3. 응답 화면 구성
+/*
+	HttpSession session = request.getSession();
+	session.setAttribute("board", board);
+	return "getBoard";
+*/
+	ModelAndView mav = new ModelAndView();
+	mav.addObject("board", board);
+	mav.setViewName("getBoard");
+	return mav ; 
+	}
+}
+```
+InsertBoardController, UpdateBoardController, DeleteBoardController 클래스는  
+모두 ```redirect:getBoardList.do```를 View 이름으로 설정하면 된다.           
+  
+**InsertBoardController**
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class InsertBoardController implements Controller {
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+		System.out.println("글 등록 처리");
+
+		// request.setCharacterEncoding("UTF-8");
+		String title = request.getParameter("title");
+		String writer = request.getParameter("writer");
+		String content = request.getParameter("content");
+
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setTitle(title);
+		vo.setWriter(writer);
+		vo.setContent(content);
+
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.insertBoard(vo);
+
+		// 3. 화면 네비게이션
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("redirect:getBoardList.do");
+		return mav;
+	}
+}
+```
+   
+**UpdateBoardController**   
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class UpdateBoardController implements Controller{
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+	
+		System.out.println("글 수정 처리");
+		// 1. 사용자 입력 정보 추출 
+		
+		// request.setCharacterEncoding("UTF-8");
+		String title = request.getParameter("title");
+		String content = request.getParameter("content");
+		String seq = request.getParameter("seq");
+		
+		
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setTitle(title);
+		vo.setContent(content);
+		vo.setSeq(Integer.parseInt(seq));
+		
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.updateBoard(vo);
+		
+		// 3. 화면 네비게이션
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("redirect:getBoardList.do");
+		return mav;
+	}
+}
+```
+   
+**DeleteBoardController**   
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class DeleteBoardController implements Controller {
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+		
+		System.out.println("글 삭제 처리");
+		
+		// 1. 사용자 입력 정보 추출 
+		//request.setCharacterEncoding("UTF-8");
+		String seq = request.getParameter("seq");
+		
+		
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setSeq(Integer.parseInt(seq));
+		
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.deleteBoard(vo);
+		
+		// 3. 화면 네비게이션
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("redirect:getBoardList.do");
+		return mav;
+	}
+}
+```
+마지막으로 LogoutController는 로그아웃 처리 후에 로그인 화면으로 이동할 수 있도록 login.jsp 화면으로 넘기면 된다.   
+**LogoutController**
+```
+package com.springbook.view.user;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+
+public class LogoutController implements Controller{
+
+@Override
+public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+	System.out.println("로그아웃 처리");
+	// 1. 브라우저와 연결된 세션 객체를 강제 종료한다.  
+	HttpSession session = request.getSession();
+	session.invalidate();
+
+	// 2. 세션 종료 후, 메인 화면으로 이동한다.   
+	ModelAndView mav = new ModelAndView();
+	mav.setViewName("redirect:login.jsp");
+	return mav;
+	}
+}
+```
