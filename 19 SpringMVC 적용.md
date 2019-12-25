@@ -190,3 +190,298 @@ SimpleUrlHandlerMapping에 매핑 정보를 추가하면 된다.
 # 4. 글 상세 조회 기능 구현
 ## 4.1. GetBoardController 구현   
 게시글 상세 조회 기능을 구현하기 위해서 GetBoardCotroller를 다음과 같이 수정한다.   
+
+**GetBoardController**
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class GetBoardController implements Controller {
+	
+@Override
+public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+	System.out.println("글 상세 조회 처리");
+	
+	// 1. 검색할 게시글 번호 추출
+	String seq = request.getParameter("seq");
+
+	// 2. DB 연동 처리
+	BoardVO vo = new BoardVO();
+	vo.setSeq(Integer.parseInt(seq));
+
+	BoardDAO boardDAO = new BoardDAO();
+	BoardVO board = boardDAO.getBoard(vo);
+	
+	// 3. 응답 화면 구성
+/*
+	HttpSession session = request.getSession();
+	session.setAttribute("board", board);
+	return "getBoard";
+*/
+	ModelAndView mav = new ModelAndView();
+	mav.addObject("board", board);
+	mav.setViewName("getBoard.jsp");
+	return mav ; 
+	}
+}
+```
+## 4.2. HandlerMapping 등록  
+**presentation-layer.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<!-- HandlerMapping 등록 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+		<property name="mappings">
+			<props>
+				<prop key="/login.do">login</prop>
+				<prop key="/getBoardList.do">getBoardList</prop>
+				<prop key="/getBoard.do">getBoard</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- Controller 등록 -->
+	<bean id="login" class="com.springbook.view.user.LoginController"></bean>
+	<bean id="getBoardList" class="com.springbook.view.board.GetBoardListController"></bean>
+	<bean id="getBoard" class="com.springbook.view.board.GetBoardController"></bean>
+
+</beans>
+```
+   
+***
+# 5. 글 등록 기능 구현하기
+## 5.1. InsertBoardController 구현  
+InsertBoardController 클래스를 수정한다.    
+   
+**InsertBoardController**
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class InsertBoardController implements Controller {
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+		System.out.println("글 등록 처리");
+
+		// request.setCharacterEncoding("UTF-8");
+		String title = request.getParameter("title");
+		String writer = request.getParameter("writer");
+		String content = request.getParameter("content");
+
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setTitle(title);
+		vo.setWriter(writer);
+		vo.setContent(content);
+
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.insertBoard(vo);
+
+		// 3. 화면 네비게이션
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("getBoardList.do");
+		return mav;
+	}
+}
+```
+## 5.2. HandlerMapping 등록  
+반복적인 과정을 거치니 다음에 할 동작까지 한번에 정의하겠다.   
+**presentation-layer.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<!-- HandlerMapping 등록 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+		<property name="mappings">
+			<props>
+				<prop key="/login.do">login</prop>
+				<prop key="/logout.do">logout</prop>
+				<prop key="/getBoardList.do">getBoardList</prop>
+				<prop key="/getBoard.do">getBoard</prop>
+				<prop key="/insertBoard.do">insertBoard</prop>
+				<prop key="/updateBoard.do">updateBoard</prop>
+				<prop key="/deleteBoard.do">deleteBoard</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- Controller 등록 -->
+	<bean id="login" class="com.springbook.view.user.LoginController"></bean>
+	<bean id="logout" class="com.springbook.view.user.LogoutController"></bean>
+	<bean id="getBoardList" class="com.springbook.view.board.GetBoardListController"></bean>
+	<bean id="getBoard" class="com.springbook.view.board.GetBoardController"></bean>
+	<bean id="insertBoard" class="com.springbook.view.board.InsertBoardController"></bean>
+	<bean id="updateBoard" class="com.springbook.view.board.UpdateBoardController"></bean>
+	<bean id="deleteBoard" class="com.springbook.view.board.DeleteBoardController"></bean>
+
+</beans>
+```
+   
+***
+# 6. 글 수정 기능 구현하기
+## 6.1. UpdateBoardController 구현  
+**UpdateBoardController**
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class UpdateBoardController implements Controller{
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+	
+		System.out.println("글 수정 처리");
+		// 1. 사용자 입력 정보 추출 
+		
+		// request.setCharacterEncoding("UTF-8");
+		String title = request.getParameter("title");
+		String content = request.getParameter("content");
+		String seq = request.getParameter("seq");
+		
+		
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setTitle(title);
+		vo.setContent(content);
+		vo.setSeq(Integer.parseInt(seq));
+		
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.updateBoard(vo);
+		
+		// 3. 화면 네비게이션
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("getBoardList.do");
+		return mav;
+	}
+}
+```
+   
+***
+# 7. 글 삭제 기능 구현하기
+## 7.1. DeleteBoardController 구현  
+**DeleteBoardController**
+```
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class DeleteBoardController implements Controller {
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+		
+		System.out.println("글 삭제 처리");
+		
+		// 1. 사용자 입력 정보 추출 
+		//request.setCharacterEncoding("UTF-8");
+		String seq = request.getParameter("seq");
+		
+		
+		// 2. DB 연동 처리
+		BoardVO vo = new BoardVO();
+		vo.setSeq(Integer.parseInt(seq));
+		
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.deleteBoard(vo);
+		
+		// 3. 화면 네비게이션
+		ModelAndView mav = new ModelAndView();
+		mav.setViewName("getBoardList.do");
+		return mav;
+	}
+}
+```
+     
+***
+# 8. 로그아웃 기능 구현하기
+## 8.1. LogoutController 구현  
+**LogoutController**
+```
+package com.springbook.view.user;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+
+public class LogoutController implements Controller{
+
+@Override
+public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) {
+	System.out.println("로그아웃 처리");
+	// 1. 브라우저와 연결된 세션 객체를 강제 종료한다.  
+	HttpSession session = request.getSession();
+	session.invalidate();
+
+	// 2. 세션 종료 후, 메인 화면으로 이동한다.   
+	ModelAndView mav = new ModelAndView();
+	mav.setViewName("login.jsp");
+	return mav;
+	}
+}
+```     
+   
+***
+# 9. ViewResolver 활용하기
+우리는 스프링 설정 파일인 presentation-layer.xml에  
+HandlerMapping, Controller 클래스들을 ```<bean>```등록하여 
+Spring 컨테이너가 객체를 생성하도록 하였다.   
+  
+그런데 아직 적용하지 않은 한가지 요소가 있는데 바로 ViewResolver 이다.      
+ViewResolver를 이용하면 클라이언트로부터의 직접적인 JSP 호출을 차단할 수 있어서     
+대부분 웹 프로젝트에서 ViewResolver 사용은 거의 필수이다.     
+ViewResolver 역시 여러가지가 있지만 JSP를 View로 사용하는 경우에는 InternalResourceViewResolver를 사용한다.     
+
+우선 클라이언트 브라우저에서 JSP 파일을 직접 호출하면 어떤 문제가 발생하는지 확인해보자  
+게시글 목록 화면을 제공하는 getBoardList.jsp 파일을 브라우저에서 직접 호출하면 오류는 발생하지 않지만
+**아무 데이터도 출력되지 않는다.**   
+   
+글 목록 화면에 아무런 데이터도 출력되지 않는 것은 getBoardList.jsp 파일이 실행되기 전에  
+게시글 목록을 검색하는 GetBoardListController가 실행되지 않았기 때문이다.   
+**따라서 사용자가 getBoardList.jsp 파일을 직접 호출하면,  
+에러가 발생하고 GetBoardListController부터 실행할 수 있도록 적절히 제어해야 하는데,**    
+이때 ViewResolver를 이용하면 된다.  
+   
+## 9.1. ViewResolver 적용  
+먼저 ```/WEB-INF/board```폴더를 생성하고,  
+기존에 사용했던 목록 화면과 상세 화면에 해당하는 getBoardList.jsp와 getBoard.jsp 파일을 이동시킨다.  
