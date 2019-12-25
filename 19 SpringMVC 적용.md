@@ -62,13 +62,12 @@ presentation-layer.xml에 HanlderMapping 과 LoginController를 ```<bean>``` 등
 **presentation-layer.xml**   
 ```
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns="http://java.sun.com/xml/ns/javaee"
-	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee https://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
-	version="2.5">
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<!-- HandlerMapping 등록 -->
-	<bean calss="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+<!-- HandlerMapping 등록 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
 		<property name="mappings">
 			<props>
 				<prop key="/login.do">login</prop>
@@ -78,34 +77,7 @@ presentation-layer.xml에 HanlderMapping 과 LoginController를 ```<bean>``` 등
 	
 	<!-- Controller 등록 -->
 	<bean id="login" class="com.springbook.view.user.LoginController"></bean>
-
-
-	<filter>
-		<filter-name>characterEncoding</filter-name>
-		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
-		<init-param>
-			<param-name>encoding</param-name>
-			<param-value>UTF-8</param-value>
-		</init-param>
-	</filter>
-	<filter-mapping>
-		<filter-name>characterEncoding</filter-name>
-		<url-pattern>*.do</url-pattern>
-	</filter-mapping>
-
-	<servlet>
-		<servlet-name>action</servlet-name>
-		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
-		<init-param>
-			<param-name>contextConfigLocation</param-name>
-			<param-value>/WEB-INF/config/presentation-layer.xml</param-value>	
-		</init-param>
-	</servlet>
-	<servlet-mapping>
-		<servlet-name>action</servlet-name>
-		<url-pattern>*.do</url-pattern>
-	</servlet-mapping>
-</web-app>
+</beans>	
 ```
 위 설정에서 SimpleUrlHandlerMapping 객체는 Setter 인젝션을 통해 Properties 타입의 컬렉션 객체를 의존성 주입하고 있다.  
 그리고 의존성 주입된 Properties 컬렉션에는 ```/login.do``` 경로 요청에 대해 아이디가 login인 객체가 매핑되어 있다.  
@@ -114,27 +86,96 @@ presentation-layer.xml에 HanlderMapping 과 LoginController를 ```<bean>``` 등
   
 사실 SimpleUrlHandlerMapping의 기능은 우리가 직접 구현한 HandlerMapping과 같다. 
 우리가 직접 구현한 HandlerMapping 도 Properties 대신 HashMap 객체를 이용한 것만 제외하면  
-스프링의 SimpleUrlHandlerMapping과 같은 기능을 제공한다.  
-
-### 1.2.1. 내용1
-```
-내용1
-```
+스프링의 SimpleUrlHandlerMapping과 같은 기능을 제공한다.   
 
 ***
-# 2. 대주제
-> 인용
-## 2.1. 소 주제
-### 2.1.1. 내용1
+# 3. 글 목록 검색 기능 구현
+## 3.1. GetBoardListController 구현
+글 목록을 출력하기 위해서 기존에 사용하던 GetBoardListController 클래스를 수정한다.
+**GetBoardListController**
 ```
-내용1
-```   
+package com.springbook.view.board;
 
-***
-# 3. 대주제
-> 인용
-## 3.1. 소 주제
-### 3.1.1. 내용1
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+// import javax.servlet.http.HttpSession;
+
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.Controller;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class GetBoardListController implements Controller {
+
+	@Override
+	public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
+		System.out.println("글 목록 검색 처리");
+		
+		// 1. 사용자 입력 정보 추출(검색 기능은 나중에 구현)
+		// 2. DB 연동처리
+		BoardVO vo = new BoardVO();
+		BoardDAO boardDAO = new BoardDAO();
+		List<BoardVO> boardList = boardDAO.getBoardList(vo);
+		
+		// 3. 검색 결과를 세션에 저장하고 목록 화면으로 이동한다.  
+		ModelAndView mav = new ModelAndView();
+		mav.addObject("boardList", boardList); //모델 정보 입력
+		mav.setViewName("getBoardList.jsp"); // 뷰 정보 입력
+		
+		return mav;
+	/*
+		HttpSession session = request.getSession();
+		session.setAttribute("boardList", boardList);
+		return "getBoardList.jsp";
+	*/	
+	}
+}
 ```
-내용1
+여기서 중요한 것은 검색 결과를 세션이 아닌 ModelAndView 객체에 저장하고 있다는 점이다.     
+세션이라는 것은 클라이언트 브라우저 하나당 하나씩 서버 메모리에 생성되어      
+클라이언트의 상태정보를 유지하기 위해서 사용한다.   
+  
+따라서 세션에 많은 정보가 저장되면 될수록 서버에 부담을 줄 수 밖에 없다.  
+   
+결국, 검색 결과는 세션이 아닌 HttpServletRequest 객체에 저장하는 것이 맞다.  
+HttpServletRequest는 클라이언트의 요청으로 생성됐다가 응답 메시지가 클라이언트로 전송되면 자동으로 삭제되는 일회성 객체이다.  
+따라서 검색 겨로가를 세션이 아닌 HttpServletRequest 객체에 저장하여 공유하면 서버에 부담을 주지 않고도 데이터를 공유할 수 있다.  
+
+**하지만**  
+GetBoardListController는 검색 결과를 HttpSession도 아니고 HttpServletRequest도 아닌 ModelAndView에 저장하고 있다.    
+ModelAndView 는 클래스 이름에서 알 수 있듯이 Model과 View 정보를 모두 저장하여 리턴할 때 사용한다.  
+   
+DispatcherServlet은 Controller가 리턴한 ModelAndView 객체에서 Model 정보를 추출한 다음   
+HttpServletRequest 객체에 검색 결과에 해당하는 Model 정보를 저장하여 JSP로 포워딩한다.  
+따라서 JSP 파일에서는 검색 결과를 세션이 아닌 HttpServletRequest로 부터 꺼내 쓸 수 있다.  
+   
+## 3.2. HandlerMapping 등록  
+이제 GetBoardListController 객체가 ```/getBoardList.do```요청에 동작할 수 있도록,   
+SimpleUrlHandlerMapping에 매핑 정보를 추가하면 된다.  
+
+**presentation-layer.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+<!-- HandlerMapping 등록 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+		<property name="mappings">
+			<props>
+				<prop key="/login.do">login</prop>
+				<prop key="/getBoardList.do">getBoardList</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- Controller 등록 -->
+	<bean id="login" class="com.springbook.view.user.LoginController"></bean>
+	<bean id="getBoardList" class="com.springbook.view.board.GetBoardListController"></bean>
+
+</beans>
 ```
