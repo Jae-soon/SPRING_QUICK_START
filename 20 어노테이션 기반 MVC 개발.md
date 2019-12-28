@@ -163,6 +163,68 @@ public class InsertBoardController{
 ```
 
 ## 1.3. 클라이언트 요청 처리 
+대부분 Controller는 사용자의 입력 정보를 추출하여 VO 객체에 저장한다.         
+그리고 비즈니스 컴포넌트의 메소드를 호출할 때 VO 객체를 인자로 전달한다.        
+(위 InsertBoardController와 같다)    
+    
+사용자 입력 정보는 HttpServletRequest의 getParameter() 메소드를 사용하여 추출한다.      
+그렇기에 위의 코드처럼 각각의 파라미터에서의 값을 가져와 이를 사용하는 것인데     
+    
+사용자가 입력하는 정보가 믾거나 변경되는 상황에서 문제가 생긴다.     
+사용자 입력 정보가 많으면 그 만큼의 자바 코드가 필요할 것이고,      
+입력 정보가 변결될 때 마다 Controller 클래스는 수정되어야 한다.     
+  
+우리는 **Command 객체**를 이용하여 이런 문제를 모두 해결할 수 있다.  
+(Command 객체는 Controller 메소드 매개변수로 받은 VO 객체라고 보면 된다.)   
+
+InsertBoardController 클래스의 insertBoard() 메소드를 Command 객체를 이용하여 구현한다.  
+   
+**InsertBoardController**
+```  
+package com.springbook.view.board;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+@Controller
+public class InsertBoardController{
+	
+	@RequestMapping(value = "/insertBoard.do")
+	public void InsertBoard(BoardVO vo) {
+		System.out.println("글 등록 처리");
+
+		BoardDAO boardDAO = new BoardDAO();
+		boardDAO.insertBoard(vo);
+	}
+}
+```
+insertBoard() 메소드의 매개변수로 사용자가 입력한 값을 매핑할 BoardVO 클래스를 선언하면,     
+스프링 컨테이너가 insertBoard() 메소드를 실행할 때 Command 객체를 생성하여 넘겨준다.       
+그리고 이때 사용자가 입력한 값들을 Command 객체에 세팅까지 해서 넘겨준다.  
+결과적으로 사용자 입력 정보 추출과 VO 객체 생성, 그리고 값 설정을 모두 컨테이너가 자동으로 처리하는 것이다.  
+    
+   [그림]   
+     
+1. 서블릿 컨테이너는 클라이언트의 HTTP 요청이 서버에 전달되는 순간 
+2. HttpServletRequest 객체를 생성하고 HTTP 프로토콜에 설정된 모든 정보를 추출하여 HttpServletRequest 객체에 저장한다.  
+3. 그리고 이 HttpServletRequest 객체를 Service() 메소드를 호출할 때, 인자로 전달해준다.  
+
+Service() 는 스프링 컨테이너에서 만든 DispatcherServlet이 실행하는 메소드이다.  
+DispatcherServlet은 해당 request의 getParameter()를 이용하여 값을 저장하고 이를 커멘드 객체에 저장시킨다.  
+이때 커멘드 객체의 자료형 기준은 @RequestMapping이 있는 메소드의 매개변수를 기준으로 만들고 할당해주는 것이다.  
+  
+후에 우리는 이렇게 값을 할당 받은 커멘드 객체만을 인자로 받아서 이를 DAO 처리를 해주면 된다.  
+   
+
+
+
 ***
 # 2. 대주제
 > 인용
