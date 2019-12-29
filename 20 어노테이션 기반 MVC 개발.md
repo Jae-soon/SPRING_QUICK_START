@@ -222,6 +222,26 @@ DispatcherServlet은 해당 request의 getParameter()를 이용하여 값을 저
   
 후에 우리는 이렇게 값을 할당 받은 커멘드 객체만을 인자로 받아서 이를 DAO 처리를 해주면 된다.  
    
+서블릿 객체는 서블릿 컨테이너가 생성한다.  
+그리고 ```service()``` ```doGet()``` ```doPost()``` 메소드도 서블릿 컨테이너가 호출한다.  
+이때 ```service()``` ```doGet()``` ```doPost()```메소드가 정상으로 호출되려면  
+HttpServletRequest 와 HttpServletResponse 객체가 필요한데, 이 객체들도 서블릿 컨테이너가 생성해서 넘겨준다.  
+결국 service()메소드는 매개변수로 받은 HttpServletRequest 객체를 통해 다양한 요청 처리를 구현할 수 있다.   
+
+이러한 관점을 이제 스프링 컨테이너로 옮겨보자.  
+클라이언트가 글 등록 정보를 적절하게 입력하고, 서버에 ```/insertBoard.do``` 요청을 전달하면  
+스프링 컨테이너는 @Controller가 붙은 모든 컨트롤러 객체를 생성하고,  
+insertBoardController가 가지고 있는 insertBoard() 메소드를 실행한다. 
+이때 매개변수에 해당하는 BoardVO 객체를 스프링 컨테이너가 생성하여 전달한다.   
+
+[사진]
+
+1. 매개변수에 해당하는 BoardVO 객체를 생성하고,  
+2. 사용자가 입력한 파라미터 값들을 추출하여 BoardVO 객체의 Setter 메소드를 통해 저장한다.  
+3. insertBoard() 메소드를 호출할 때, 사용자가 입력값들이 설정된 BoardVO 객체가 인자로 전달된다.  
+
+여기서 중요한 것은 Form 태그 안의 파라미터 이름과 Command 객체의 Setter 메소드 이름이 반드시 일치해야한다.  
+즉, 각 파라미터 이름에 해당하는 ```setTitle()``` ```setWrite()```등이 파라미터 이름 title,write 같이 일치해야한다.  
 
 
 
