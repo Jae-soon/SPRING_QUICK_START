@@ -277,24 +277,15 @@ public class BoardVO {
 <mapper namespace="BoardDAO">
 
 	<insert id="insertBoard">
-		INSERT INTO board(seq, title, writer, content)
-		VALUES((select nvl(max(seq), 0)+1 form
-		board),#{title},#{writer},#{content})
+		INSERT INTO board(seq, title, writer, content) VALUES((select nvl(max(seq), 0)+1 from board),#{title},#{writer},#{content})
 	</insert>
 
 	<update id="updateBoard">
-		UPDATE board
-		SET
-		title=#{title}
-		content=#{content}
-		WHERE
-		seq = #{seq}
+		UPDATE board SET title=#{title}, content=#{content} WHERE seq=#{seq}
 	</update>
 
 	<delete id="deleteBoard">
-		DELETE board
-		WHERE
-		seq = #{seq}
+		DELETE board WHERE seq = #{seq}
 	</delete>
 
 	<select id="getBoard" resultType="board">
@@ -345,7 +336,7 @@ jdbc.password=
 <configuration>
 	<properties resource="db.properties" />
 	<typeAliases>
-		<typeAlias type="com.springframework.biz.board.boardVO" alias="board"></typeAlias>
+		<typeAlias type="com.springbook.biz.BoardVO" alias="board"></typeAlias>
 	</typeAliases>
 	<environments default="development">
 		<environment id="development">
@@ -529,4 +520,13 @@ public class BoardServiceClient {
 실행 시에 어떤 파라미터값들이 SQL에 바인딩되었는지 알 수 있다.  
 그리고 실행 결과 정보도 간단하게 출력해준다.  
 
-
+```
+--->BoardVO [seq=8, title=myBatis 제목, writer=홍길동, content=myBatis 내용입니다..., regDate=Wed Jan 08 00:00:00 KST 2020, cnt=0]
+--->BoardVO [seq=7, title=, writer=, content=, regDate=Sun Dec 29 00:00:00 KST 2019, cnt=0]
+--->BoardVO [seq=6, title=asd, writer=asd, content=sad, regDate=Sun Dec 29 00:00:00 KST 2019, cnt=0]
+--->BoardVO [seq=5, title=asd, writer=sad, content=sad, regDate=Sun Dec 29 00:00:00 KST 2019, cnt=0]
+--->BoardVO [seq=4, title=asd, writer=sad, content=sad, regDate=Sun Dec 29 00:00:00 KST 2019, cnt=0]
+--->BoardVO [seq=3, title=asd, writer=asd, content=asd, regDate=Sun Dec 29 00:00:00 KST 2019, cnt=0]
+--->BoardVO [seq=2, title=, writer=, content=, regDate=Sun Dec 29 00:00:00 KST 2019, cnt=0]
+--->BoardVO [seq=1, title=제목2, writer=작성자1, content=내용123, regDate=Sat Dec 28 00:00:00 KST 2019, cnt=0]
+```
