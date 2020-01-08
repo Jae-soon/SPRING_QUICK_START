@@ -503,7 +503,36 @@ BoardDAO 클래스는 생성자에서 SqlSessionFactoryBean을 이용하여 SqlS
   
 **BoardServiceClient**
 ```
+package com.springbook.biz.board;
 
+import java.sql.SQLException;
+import java.util.List;
+
+import com.springbook.biz.BoardVO;
+import com.springbook.biz.board.impl.BoardDAO;
+
+public class BoardServiceClient {
+	public static void main(String[] args) throws SQLException {
+		BoardDAO boardDAO = new BoardDAO();
+		
+		BoardVO vo = new BoardVO();
+		vo.setTitle("myBatis 제목");
+		vo.setWriter("홍길동");
+		vo.setContent("myBatis 내용입니다...");
+		boardDAO.insertBoard(vo);
+		
+		vo.setSearchCondition("TITLE");
+		vo.setSearchKeyword("");
+		List<BoardVO> boardList = boardDAO.getBoardList(vo);
+		for(BoardVO board : boardList) {
+			System.out.println("--->" + board.toString());
+		}
+	}
+}
 ```
+작성된 클라이언트 프로그램을 실행했을 때, 글 등록 성공 후에 글 목록 화면이 출력될 것이다.  
+콘솔에 출력된 실행 결과 로그 메시지들을 살펴보면 어떤 SQL 명령어들이 실행되고 있고   
+실행 시에 어떤 파라미터값들이 SQL에 바인딩되었는지 알 수 있다.  
+그리고 실행 결과 정보도 간단하게 출력해준다.  
 
 
