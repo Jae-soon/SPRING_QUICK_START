@@ -106,17 +106,161 @@ parameterType 속성값으로는 일반적으로 기본형이나 VO 형태의 �
 ```
 이때 Mybatis 메인 설정 파일(sql-map-config.xml)에 등록된      
 ```<typeAlias>```의 Alias를 사용하면 설정을 더 간결하게 처리할 수 있다.  
-    
-    
-    
-***
-# 2. 대주제
-> 인용
-## 2.1. 소 주제
-### 2.1.1. 내용1
+
+**sql-map-config.xml**
 ```
-내용1
-```   
+<typeAliases>
+  <typeAlias alias="board" type="com.springbook.biz.board.BoardVO"/>
+</typeAliases>
+```
+**board-mapping.xml**
+```
+<select id="getBoard" parameterType="board" resultType="board">
+  select * form board where seq = #{seq}
+</select>
+```
+
+alias는 import 와 비슷하게 클래스의 전체경로를 사용하는 것을 줄이기 위해 사용한다.         
+  
+parameterType으로 지정된 클래스에는 사용자가 입력한 값들을 저장할 여러 변수가 있다.    
+변수들을 이용하여 SQL 구문에 사용자가 입력값들을 설정하는데 이때, ```#{변수명}``` 표현을 사용한다.    
+그리고 중요한 건 parameterType 속성은 생략할 수 있으며 대부분 생략한다.  
+       
+### (3) resultType 속성  
+검색 관련 SQL 구문이 실행되면 ResultSet이 리턴되며,  
+ResultSet에 저장된 검색 결과를 어떤 자바 객체에 매핑할지 지정해야 하는데,  
+이때 사용하는 것이 resultType 속성이다. (즉 어떤 자료형으로 반환할지)   
+
+**sql-map-config.xml**
+```
+<typeAliases>
+  <typeAlias alias="board" type="com.springbook.biz.board.BoardVO"/>
+</typeAliases>
+```
+**board-mapping.xml**
+```
+<select id="getBoard" parameterType="board" resultType="board">
+  select * form board where seq = #{seq}
+</select>
+```
+resultType 속성값으로도 Alias 를 사용할 수 있는데,   
+만약 resultType 속성값으로 위와 같이 board를 사용했다면    
+SELECT 실행 결과를 BoardVO 객체에 매핑하여 리턴하라는 의미이다.    
+   
+resultType 속성은 당연히 쿼리 명령어가 등록되는 ```<select>``` 엘리먼트에서만 사용할 수 있으며,  
+parameterType 속성과 달리 ```<select>``` 엘리먼트에서 절대 생략할 수 없는 속성이다.     
+다만 resultType 속성 대신에 나중에 살펴볼 resultMap 속성을 사용할 수 는 있다.  
+       
+### (4) ```<insert>``` 엘리먼트   
+```<insert>``` 엘리먼트는 데이터베이스에 데이터를 삽입하는 INSERT 구문을 작성하는 요소이다.     
+**Mapper XML**  
+```
+<insert id="insertBoard" parameterType="board">
+  insert into board(seq, title, writer, content)
+  values(#{seq}, #{title}, #{writer}, #{content})
+</insert>
+```
+```<insert>``` 구문은 자식 요소로 ```<selectKey>``` 엘리먼트를 가질 수 있다.  
+대부분 관계형 데이터베이스에서는 기본 키 필드의 자동 생성을 지원하는데,  
+Mybatis에서는 ```<insert>```요소의 자식 요소인 ```<selectKey>```요소를 사용하여 생성된 키를 쉽게 가져올 수 있는 방법을 제공한다.
+```
+<insert id="insertBoard" parameterType="board">
+  <selectKey KeyProperty="seq" resultType="int">
+    select board_seq.nextval as seq from dual
+  </selectKey>
+  insert into board(seq, title, writer, content)
+  values(#{seq}, #{title}, #{writer}, #{content})
+</insert>
+```
+이 설정은 ```BOARD_SEQ```라는 시퀸스로부터 유일한 킷값을 얻어내어 글 등록에서 일련번호 값으로 사용하는 설정이다.  
+       
+### (5) ```<update>``` 엘리먼트   
+```<update>``` 엘리먼트는 데이터를 수정할 때 사용되는 UPDATE 구문을 작성하는 요소이다.  
+**Mapper XML**  
+```
+<mapper namespace="Board">
+<update id="updateBoard" parameterType="board">
+  update board set title=#{title}, content=#{content}
+  where seq=#{seq}
+</update>
+</mapper>
+```
+       
+### (6) ```<delete>``` 엘리먼트   
+```<delete>``` 엘리먼트는 데이터를 삭제할 때 사용되는 DELETE 구문을 작성하는 요소이다.     
+**Mapper XML**  
+```
+<mapper namespace="Board">
+<delete id="deleteBoard" parameterType="board">
+  delete board where seq=#{seq}
+</delete>
+</mapper>
+```
+   
+***
+# 2. SQL Mapper XML 추가 설정
+## 2.1. resultMap 속성 사용
+검색 결과를 특정 자바 객체에 매핑하여 리턴하기 위해서 parameterType 속성을 사용한다.    
+그러나 검색 결과를 parameterType 속성으로 매핑할 수 없는 매핑할 수 없는 몇몇 사례가 있다.  
+예를 들어, 검색 쿼리가 단순 테이블 조회가 아닌 JOIN 구문을 포함할 때는   
+검색 결과를 정확하게 하나의 자바나 객체로 매핑할 수 없다.  
+또는 검색된 테이블의 칼럼 이름과 매핑에 사용될 자바 객체의 변수 이름이 다를 때에   
+검색 결과가 정확하게 자바 객체로 매핑되지 않는다.  
+(반대로 생각하면 컬럼 이름과 자바 객체의 변수 이름이 같아야 된다는...)  
+    
+이럴 때 resultMap 속성을 사용하여 처리하면 된다.   
+  
+resultMap 속성을 사용하려면 먼저 ```<resultMap>```엘리 먼트를 사용하여 매핑 규칙을 지정해야 한다.  
+```
+<mapper namespace="Board">
+<resultMap id="boardResult" type="board">
+  <id property="seq" column="SEQ" />
+  <result property="title" column="TITLE" />
+  <result property="writer" column="WRITER" />
+  <result property="content" column="CONTENT" />
+  <result property="regDate" column="REGDATE" />
+  <result property="cnt" column="CNT" />
+</resultMap>
+
+<select id="getBoardList" parameterType="board" resultMap="boardResult">
+  select * from board
+  where title like '%'||#{searchKeyword}||'%'
+  order by seq desc
+</select>  
+</mapper>
+```
+위 설정에서는 boardResult라는 아이디로 ```<resultMap>```을 설정했다.   
+```<resultMap>``` 설정은 PK에 해당하는 SEQ 컬럼만 ```<id>``` 엘리먼트를 사용했고,   
+나머지는 ```<result>``` 엘리먼트를 이용하여 검색 결과로 얻어낸 컬럼의 값과 BoardVO 객체의 변수를 매핑하고 있다.  
+이렇게 설정된 ```<resultMap>```을 getBoardList로 등록된 쿼리에서 resultMap 속성으로 참조하고 있다.    
+
+## 2.2. CDATA Section 사용  
+만약 SQL 구문 내에 ```<``` (비교 연산자) 기호를 사용한다면 에러가 발생한다.  
+  
+이는 XML 파서 XML 파일을 처리할 때 ```<```를 연산자가 아닌 태그의 시작으로 처리하기 때문이다.  
+결국 Mapper 파일에 등록된 SQL 구문에서는 ```<```, ```>```같은 기호를 사용하면 에러가 발생한다.  
+하지만 다음처럼 CDATA Section으로 SQL 구문을 감싸주면 에러는 사라진다.  
+```
+<![CDATA][
+내용
+]]>
+```
+**Mapper xml**
+```
+<select id="getBoard" resultType="board">
+<![CDATA][
+select * 
+from board
+where seq <= #{seq}
+]]>
+</select>
+```
+CDATA Section은 Mybatis와는 상관없는 XML 고유의 문법으로서,  
+CDATA 영역에 작성된 데이터는 단순한 문자 데이터이므로 XML 파서가 해석하지 않도록 한다.  
+결국, CDATA Section 안에 작성된 데이터는 XML 파서가 처리하지 않고 
+데이터베이스에 그대로 전달하므로 문제가 발생하지 않는다.     
+따라서 지금 당장은 아니더라도 나중에 ```<```, ```>```를 연산자로 사용할 것을 대비해    
+모든 SQL 구문을 CDATA Section으로 처리하는 것이다.    
 
 ***
 # 3. 대주제
