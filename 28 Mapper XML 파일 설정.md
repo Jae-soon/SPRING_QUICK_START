@@ -262,6 +262,89 @@ CDATA 영역에 작성된 데이터는 단순한 문자 데이터이므로 XML �
 따라서 지금 당장은 아니더라도 나중에 ```<```, ```>```를 연산자로 사용할 것을 대비해    
 모든 SQL 구문을 CDATA Section으로 처리하는 것이다.    
 
+## 2.3. SQL 대문자로 설정하기  
+Mapper 파일에 등록되는 SQL 구문은 일반적으로 대문자로 작성한다.  
+사실 SQL 구문은 대소문자를 구분하지 않는다.  
+따라서 어떻게 작성하든 상관없다.   
+하짐나 파라미터들을 바인딩할 때 대부분 컬럼명과 변수명이 같으므로  
+SQL 구문이 조금이라도 복잡해지면 이 둘을 구분하기가 쉽지 않다.    
+따라서 SQL은 모두 대문자로 표현하여 좀 더 식별성을 높인다.   
+   
+예시)  
+```
+<update id="updateBoard">
+  update board set
+    title = #{title},
+    content = #{content}
+  where seq = #{seq}  
+</update>
+```
+```
+<update id="updateBoard">
+  UPDATE BOARD SET
+    TITLE = #{title},
+    CONTENT = #{content}
+  WHERE SEQ = #{seq}  
+</update>
+```
+지금까지 살펴본 내용들이 모두 반영된 최종 Mapper 파일은 다음과 같다.  
+**board-mapping.xml**
+```
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BoardDAO">
+	<resultMap id="boardResult" type="board">
+		<id property="seq" column="SEQ" />
+		<result property="title" column="TITLE" />
+		<result property="writer" column="WRITER" />
+		<result property="content" column="CONTENT" />
+		<result property="regDate" column="REGDATE" />
+		<result property="cnt" column="CNT" />
+	</resultMap>
+	<insert id="insertBoard" parameterType="board">
+		<![CDATA[
+			INSERT INTO BOARD(SEQ, TITLE, WRITER, CONTENT)
+			VALUES ((SELECT NVL(MAX(SEQ), 0)+1 FROM BOARD), 
+			#{title}, #{writer}, #{content})
+		]]>
+	</insert>
+
+	<update id="updateBoard">
+		<![CDATA[
+  			UPDATE BOARD SET
+    		TITLE = #{title},
+    		CONTENT = #{content}
+  			WHERE SEQ = #{seq}  
+		]]>
+	</update>
+	<delete id="deleteBoard">
+		<![CDATA[
+			DELETE BOARD WHERE SEQ=#{seq}
+		]]>
+	</delete>
+	<select id="getBoard" resultType="board">
+		<![CDATA[
+			SELECT * 
+			FROM BOARD
+			WHERE SEQ 
+			
+		<= #{seq}
+		]]>
+	</select>
+	<select id="getBoardList" parameterType="board"
+		resultMap="boardResult">
+		<![CDATA[
+			SELECT * FROM BOARD
+			WHERE TITLE LIKE '%'||#{searchKeyword}||'%'
+			ORDER BY SEQ DESC
+		]]>
+	</select>
+</mapper>
+```
+
+
 ***
 # 3. 대주제
 > 인용
