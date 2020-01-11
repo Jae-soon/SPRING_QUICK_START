@@ -375,8 +375,87 @@ SqlSession session = sessionFactory.openSession();
 session.insert("BoardDAO.insertBoard", vo);
 ```
 
+## 3.3. 유틸리티 클래스 작성  
+Mybatis를 사용하여 DB 연동을 간단하게 처리하려면 최종적으로 Mybatis가 제공하는 SqlSession 객체를 사용해야 한다.  
+따라서 모든 DAO 클래스에서 좀 더 쉽게 SqlSession 객체를 획득할 수 있도록 공통으로 제공할 유틸리티 클래스를 만드는 것이다.  
 
-### 3.1.1. 내용1
+**SqlSessionFactoryBean**
+
+```java
+package com.springbook.biz.util;
+
+import java.io.Reader;
+
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+public class SqlSessionFactoryBean {
+	private static SqlSessionFactory sessionFactory = null;
+	static {
+		try {
+			if (sessionFactory == null) {
+				Reader reader = Resources.getResourceAsReader("sql-map-config.xml");
+				sessionFactory = new SqlSessionFactoryBuilder().build(reader);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public static SqlSession getSqlSessionInstance() {
+		return sessionFactory.openSession();
+	}
+}
 ```
-내용1
+물론 지금 이런 유틸리티 클래스르 우리가 직접 작성하지만,  
+나중에 Mybatis를 스프링과 연동할 때는 스프링 프레임워크에서 제공하는 클래스를 사용하면 된다.  
+  
+## 3.4. SqlSession 객체  
+SqlSession 객체는 Mapper XML에 등록된 SQL을 실행하기 위한 다양한 API를 제공한다.  
+  
+### (1) selectOne() 메소드  
+selectOne() 메소드는 오직 하나의 데이터를 검색하는 SQL 구문을 실행할 때 사용한다.  
+따라서 getBoard() 같은 단 건 조회용 메소드를 구현할 때 사용할 수 있다.    
+  
+쿼리가 한 개의 레코드만 리턴되는지를 검사하므로 만약 쿼리의 수행 결과로 두 개 이상의 레코드가 리턴될 때는 예외가 발생한다.  
+
+```java
+public Object selectOne(String statement)
+public Object selectOne(String statement, Object Parameter)
+```
+selectOne() 메소드의 statement 매개변수는 MapperXML 파일에 등록된 SQL의 아이디이다.  
+이때, SQL의 아이디를 네임스페이스와 결합하여 지정해야 한다.  
+그리고 실행될 SQL 구문에서 사용할 파라미터 정보를 두 번째 인자로 지정하면 된다.  
+  
+**반환형이 Object 이므로 형변환 시키는 것이 좋다**
+```java
+	public BoardVO getBoard(BoardVO vo) {
+		return (BoardVO)mybatis.selectOne("BoardDAO.getBoard", vo);
+	}
+```
+
+### (2) selectList() 메소드
+selectList() 메소드는 여러 개의 데이터가 검색되는 SQL 구문을 실행할 때 사용한다.  
+매개변수의 의미는 selectOne() 메소드와 같다.  
+
+```java
+public List selectList(String statement)
+public List selectList(String statement, Object Parameter)
+```
+**반환형이 List 인데 이는 List<?>를 의미하므로 알맞게 형변환 시켜서 값을 저장하는 것이 좋다**  
+```java
+public List<BoardVO> getBoardList(BoardVO vo) {
+		return mybatis.selectList("BoardDAO.getBoardList", vo);
+	}
+```   
+  
+### (3) insert(), update(), delete() 메소드   
+insert(), update(), delete() 메소드는 각각 INSERT, UPDATE, DELETE SQL 구문을 실행할 때 사용한다.  
+각각의 메소드는 실행된 SQL 구문으로 인해 몇 건의 데이터가 처리되었는지를 리턴한다.  
+  
+```java
+public int insert(String statement, Object parameter)
+public int update(String statement, Object parameter) throws SQLException
+public int delete(String statement, Object parameter) throws SQLException
 ```
