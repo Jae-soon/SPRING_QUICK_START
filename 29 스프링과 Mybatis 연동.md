@@ -40,17 +40,29 @@ org.mybatis.spring.SqlSessionTemplate
 			<artifactId>mybatis-spring</artifactId>
 			<version>1.2.4</version>
 		</dependency>
+~ 생략 ~
+```
+mybatis-3.3.1.jar 파일은 순수하게 Mybatis 관련 라이브러리고,     
+mybatis-spring-1.2.4.jar 파일은 Mybatis와 스프링을 연동하기 위해 사용하는 라이브러리다.     
+     
+**주의 사항**   
+```
 		<!-- Ibatis -->
 		<dependency>
 			<groupId>org.apache.ibatis</groupId>
 			<artifactId>ibatis-core</artifactId>
 			<version>3.0</version>
 		</dependency>
-~ 생략 ~
+		<!-- Mybatis Spring-->
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis-spring</artifactId>
+			<version>1.2.4</version>
+		</dependency>
 ```
-mybatis-3.3.1.jar 파일은 순수하게 Mybatis 관련 라이브러리고,  
-mybatis-spring-1.2.4.jar 파일은 Mybatis와 스프링을 연동하기 위해 사용하는 라이브러리다.  
-   
+위 두가지를 같이 사용할 경울 충돌이 일어나서 오류를 범하게 된다.    
+그래서 이 두가지를 같이 사용하지 안하도록 조심하자   
+
 ***
 # 2. Mybatis 설정 파일 복사 및 수정 
 스프링과 Mybatis를 연동하려면 Mybatis 메인 환경설정 파일인 sql-map-config.xml과  
