@@ -343,12 +343,39 @@ SQL 구문이 조금이라도 복잡해지면 이 둘을 구분하기가 쉽지 
 	</select>
 </mapper>
 ```
-
-
+  
 ***
-# 3. 대주제
-> 인용
-## 3.1. 소 주제
+# 3. Mybatis JAVA API
+## 3.1. SqlSessionFactoryBuilder 클래스  
+Mybatis Mapper 설정이 끝났으면 이제 남은 직업은 Mybatis 프레임워크에서 제공하난 API를 이용해서 dAO 클래스를 구현하는 것이다.  
+Mybatis로 DAO 클래스의 CRUD 메소드를 구현하려면 Mybatis에서 제공하는 SqlSession 객체를 사용해야 한다.  
+그런데 SqlSession 객체는 SqlSessionFactory로부터 얻어야 하므로 가장 먼저 해야할 직업은 SqlSessionFactory 객체를 생성하는 일이다.  
+   
+SqlSesssionFactory 객체를 생성하려면 SqlSessionFactoryBuilder()의 build() 메소드를 이용하는데,  
+build() 메소드는 Mybatis 설정 파일(sql-map-config.xml)을 로딩하여 SqlSessionFactory 객체를 생성한다.  
+  
+그리고 sql-map-config.xml 파일을 로딩하려면 입력 스트림인 Reader 객체가 필요하다.  
+Reader 객체는 Resources 클래스의 getResourceAsReader() 메소드를 사용하여 얻어낼 수 있다.  
+다음은 SqlSessionFactory 객체를 생성하는 데 사용된 자바 코드이다.  
+
+```java
+Reader reader = Resources.getResourceAsReader("sql-map-config.xml");
+SqlSessionFactory sessionFactory = new SqlSessionFactoryBuilder().build(reader);
+```
+  
+## 3.2. SqlSessionFactory 클래스 
+SqlSessionFactorysms 이름에서 알 수 있듯이 SqlSession 객체에 대한 공장 역할을 수행한다.  
+SqlSessionFactory 객체는 openSession() 이라는 메소드를 제공하며  
+이 메소드를 이용해서 SqlSession 객체를 얻을 수 있다.    
+이렇게 얻어낸 SqlSession 객체를 통해 글 등록 기능등을 처리할 수 있다.   
+
+```java
+SqlSessionFactory sessionFactory = new SqlSessionFactoryBuilder().build(reader);
+SqlSession session = sessionFactory.openSession();
+session.insert("BoardDAO.insertBoard", vo);
+```
+
+
 ### 3.1.1. 내용1
 ```
 내용1
