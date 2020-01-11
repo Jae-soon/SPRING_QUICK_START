@@ -145,17 +145,231 @@ SQL Mapper가 등록된 sql-map-config.xml 파일도 Setter 인젝션으로 설�
 Mybatis를 이용하여 DAO 클래스를 구현하는 방법은 2가지이다.   
 이 중에 첫 번째는 SqlSessionDaoSupport 클래스를 상속하여 구현하는 것이다.  
 
-## 2.1. 소 주제
-### 2.1.1. 내용1
+**BoardDAOMybatis**
 ```
-내용1
+package com.springbook.biz.board.impl;
+
+
+import java.util.List;
+
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.support.SqlSessionDaoSupport;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.springbook.biz.BoardVO;
+
+@Repository("boardDAO")
+public class BoardDAOmybatis extends SqlSessionDaoSupport {
+	
+	@Autowired
+	public void setSeqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+		super.setSqlSessionFactory(sqlSessionFactory);
+	}
+
+	public void insertBoard(BoardVO vo) {
+		getSqlSession().insert("BoardDAO.insertBoard", vo);
+		getSqlSession().commit();
+	}
+
+	public void updateBoard(BoardVO vo) {
+		getSqlSession().update("BoardDAO.updateBoard", vo);
+		getSqlSession().commit();
+	}
+
+	public void deleteBoard(BoardVO vo) {
+		getSqlSession().delete("BoardDAO.deleteBoard", vo);
+		getSqlSession().commit();
+	}
+
+	public BoardVO getBoard(BoardVO vo) {
+		return (BoardVO)getSqlSession().selectOne("BoardDAO.getBoard", vo);
+	}
+
+	public List<BoardVO> getBoardList(BoardVO vo) {
+		return getSqlSession().selectList("BoardDAO.getBoardList", vo);
+	}
+}
+```
+SqlSessionDaoSupport 클래스를 상속한 후에 가장 먼저 한 작업이 setSqlSessionFactory() 메소드를 재정의 한 것이다.
+  
+재정의한 setSqlSessionFactory() 메소드 위에 @Autowired를 붙였는데 이렇게 하면   
+스프링 컨테이너가 setSqlSessionFactory() 메소드를 자동으로 호출한다.    
+이때, 스프링 설정 파일에 ```<bean>``` 등록된 SqlSessionFactoryBean 객체를 인자로 받아  
+부모인 SqlSessionDaoSupport에 setSqlSessionFactory() 메소드로 설정해준다.  
+  
+이렇게 해야 SqlSessionDaoSupport 클래스로부터 상속된 getSqlSession() 메소드를 호출하여 SqlSession 객체를 리턴받을 수 있다.  
+이제 SqlSession 객체의 CRUD 관련 메소드를 이용하여 DB 연동을 처리하면 된다.  
+
+```
+public void insertBoard(BoardVO vo){
+	System.out.println("===> Mybatis로 insertBoard() 기능 처리");
+	getSqlSession().insert("BoardDAO.insertBoard", vo);
+}
+```
+   
+***
+# 5. DAO 클래스 구현-방법2
+Mybatis를 이용하여 DAO 클래스를 구현하는 2번재 방법은 SqlSessionTemplate 클래스를 ```<bean>``` 등록하여 사용하는 것이다.  
+스프링 설정 파일에서 SqlSessionTemplate 클래스를 SqlSesionFactoryBean 아래에 ```<bean>``` 등록한다.    
+    
+**applicationContext.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd">
+
+	<context:component-scan base-package="com.springbook.biz"></context:component-scan>
+	<context:property-placeholder location="classpath:config/database.properties"/>
+	
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="org.h2.Driver"/>
+		<property name="url" value="jdbc:h2:tcp://localhost/~/test" />
+		<property name="username" value="sa"/>
+		<property name="password" value=""/>
+	</bean>
+	
+	<!-- SqlSessionFactoryBean 생성1 
+	<bean id="sessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="configLocation" value="classpath:sql-map-config.xml" />
+	</bean>
+	-->
+	
+	<!-- Spring과 Mybatis 연동 설정 -->
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="configLocation" value="classpath:sql-map-config.xml" />
+	</bean>
+	
+	<!-- SqlSessionTemplate 생성 -->
+	<bean class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSession"></constructor-arg>
+	</bean>
+	
+	<!-- Spring JDBC 설정 -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+	<!-- Transaction 실행 -->
+	<bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true"/>
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<aop:config>
+		<aop:pointcut expression="execution(* com.springbook.biz..*(..))" id="txPointcut"/>
+		<aop:advisor pointcut-ref="txPointcut" advice-ref="txAdvice"/>
+	</aop:config>
+	
+</beans>
 ```   
+여기서 중요한 것은 SqlSessionTemplate 클래스에는 Setter 메소드가 없어서 Setter 인젝션 할 수 없다는 것이다.  
+따라서 생성자 메소드를 이용한 Constructor 주입으로 처리할 수 밖에 없다.  
+그리고 나서 DAO 클래스를 구현할 때, SqlSessionTemplate 객체를  
+```@Autowired```를 이용하여 의존성 주입 처리하면 SqlSessionTemplate 객체로 DB 연동 로직을 처리할 수 있다.  
+  
+**BoardDAOMybatis**
+```
+package com.springbook.biz.board.impl;
+
+import java.util.List;
+import org.apache.ibatis.session.SqlSession;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.springbook.biz.BoardVO;
+
+@Repository("boardDAO")
+public class BoardDAOmybatis {
+	
+	@Autowired
+	private SqlSessionTemplate mybatis;
+
+	public void insertBoard(BoardVO vo) {
+		mybatis.insert("BoardDAO.insertBoard", vo);
+		mybatis.commit();
+	}
+
+	public void updateBoard(BoardVO vo) {
+		mybatis.update("BoardDAO.updateBoard", vo);
+		mybatis.commit();
+	}
+
+	public void deleteBoard(BoardVO vo) {
+		mybatis.delete("BoardDAO.deleteBoard", vo);
+		mybatis.commit();
+	}
+
+	public BoardVO getBoard(BoardVO vo) {
+		return (BoardVO)mybatis.selectOne("BoardDAO.getBoard", vo);
+	}
+
+	public List<BoardVO> getBoardList(BoardVO vo) {
+		return mybatis.selectList("BoardDAO.getBoardList", vo);
+	}
+}
+```
 
 ***
-# 3. 대주제
-> 인용
-## 3.1. 소 주제
-### 3.1.1. 내용1
+# 6. Mybatis 연동 테스트
+BoardDAOMybatis 객체를 의존성 주입할 수 있도록  
+BoardServiceImpl 클래스를 다음과 같이 수정하고 테스트 클라이언트 프로그램을 실행하여 결과를 확인한다.  
+    
+**BoardServiceImpl**
 ```
-내용1
+package com.springbook.biz.board.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.springbook.biz.BoardVO;
+
+
+@Service("boardService")
+public class BoardServiceImpl implements BoardService {
+	
+	@Autowired
+	private BoardDAOmybatis boardDAO;
+
+	public void insertBoard(BoardVO vo) {
+		boardDAO.insertBoard(vo); 
+	}
+
+	public void updateBoard(BoardVO vo) {
+		boardDAO.updateBoard(vo);
+	}
+
+	public void deleteBoard(BoardVO vo) {
+		boardDAO.deleteBoard(vo);
+	}
+
+	public BoardVO getBoard(BoardVO vo) {
+		return boardDAO.getBoard(vo);
+	}
+
+	public List<BoardVO> getBoardList(BoardVO vo) {
+		return boardDAO.getBoardList(vo);
+	}
+}
 ```
+이때, src/test/java 소스 폴더에 있는 BoardServiceClient 프로그램을 실행하여 테스트 할 수도 있고,  
+index.jsp 파일을 실행하여 웹 어플리케이션으로 테스트할 수도 있다.    
