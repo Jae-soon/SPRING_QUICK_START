@@ -171,8 +171,8 @@ import org.springframework.stereotype.Repository;
 
 import com.springbook.biz.BoardVO;
 
-@Repository("boardDAO")
-public class BoardDAOmybatis extends SqlSessionDaoSupport {
+@Repository
+public class BoardDAOybatis extends SqlSessionDaoSupport {
 	
 	@Autowired
 	public void setSeqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
@@ -308,8 +308,8 @@ import org.springframework.stereotype.Repository;
 
 import com.springbook.biz.BoardVO;
 
-@Repository("boardDAO")
-public class BoardDAOmybatis {
+@Repository
+public class BoardDAOMybatis {
 	
 	@Autowired
 	private SqlSessionTemplate mybatis;
@@ -385,3 +385,247 @@ public class BoardServiceImpl implements BoardService {
 ```
 이때, src/test/java 소스 폴더에 있는 BoardServiceClient 프로그램을 실행하여 테스트 할 수도 있고,  
 index.jsp 파일을 실행하여 웹 어플리케이션으로 테스트할 수도 있다.    
+
+***
+# 7. Dynamic SQL으로 검색 처리  
+Mybatis는 SQL의 재사용성과 유연성을 향상하고자 Dynamic SQL을 지원한다.   
+Dynamic SQL을 사용하면 조건에 따라 다양한 쿼리를 데이터베이스에 전송할 수 있다.  
+  
+## (1) Dynamic SQL 적용 전  
+예를 통해 Dynamic SQL의 필요성을 확인하고 적용도 해보자.   
+만약 현재 상태에서 검색 기능을 추가한다고 하면 우선 다음과 같이 2개의 검색 관련 쿼리가 필요할 것이다.  
+   
+**board-mapping.xml**  
+```
+~ 생략 ~
+	<select id="getBoardList_T" resultMap="boardResult">
+		<![CDATA[
+		SELECT *
+		FROM BOARD
+		WHERE TITLE LIKE '%'||#{searchKeyword}||'%'
+		ORDER BY SEQ DESC
+		]]>
+	</select>
+	
+	<select id="getBoardList_C" resultMap="boardResult">
+		<![CDATA[
+		SELECT *
+		FROM BOARD
+		WHERE CONTENT LIKE '%'||#{searchKeyword}||'%'
+		ORDER BY SEQ DESC
+		]]>
+	</select>
+~ 생략 ~
+```
+제목 검색과 내용 검색을 처리하기 위한 2개의 쿼리를 등록했으면,  
+이제 DAO 클래스 getBoardList() 메소드에 검색 조건에 따른 분기 처리 로직을 추가한다.  
+  
+**BoardDAOMybatis**
+```
+package com.springbook.biz.board.impl;
+
+import java.util.List;
+
+import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.springbook.biz.board.BoardVO;
+
+@Repository
+public class BoardDAOMybatis{
+	
+	@Autowired
+	private SqlSessionTemplate mybatis;
+
+	public void insertBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� insertBoard() ��� ó��");
+		mybatis.insert("BoardDAO.insertBoard", vo);
+	}
+
+	public void updateBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� updateBoard() ��� ó��");
+		mybatis.update("BoardDAO.updateBoard", vo);
+	}
+
+	public void deleteBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� deleteBoard() ��� ó��");
+		mybatis.delete("BoardDAO.deleteBoard", vo);
+	}
+
+	public BoardVO getBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� getBoard() ��� ó��");
+		return (BoardVO) mybatis.selectOne("BoardDAO.getBoard", vo);
+	}
+
+	public List<BoardVO> getBoardList(BoardVO vo) {
+		System.out.println("===> Mybatis�� getBoardList() ��� ó��");
+		if(vo.getSearchCondition().equals("TITLE")) {
+			return mybatis.selectList("BoardDAO.getBoardList_T", vo);
+		} else if(vo.getSearchCondition().equals("CONTENT")) {
+			return mybatis.selectList("BoardDAO.getBoardList_C", vo);
+		} 
+		return null;
+	}
+}
+```
+이제 수정된 파일들을 저장하고 index.jsp 파일을 실행한 후,    
+글 목록 화면에서 검색 기능을 실행해보면 정상적으로 실행될 것이다.      
+하지만 이런 방식으로 검색 기능을 구현한다면      
+이후에 추가되는 검색 조건에 대해서 비슷한 SQL 구문들을 반복해서 작성해야 할 것이고,       
+이는 결국 유지보수의 어려움으로 이어질 것이다.         
+그리고 DAO 클래스의 메소드 역시 검색 관련 SQL 구문의 개수만큼 분기 처리 로직을 추가해야 하므로     
+SQL이 추가될 때마다 DAO 클래스도 수정해야 한다.    
+  
+## (2) Dynamic SQL 적용 후  
+이런 SQL의 중복 문제를 해결하기 위해 Mybatis에서는 Dynamic SQL을 지원한다.  
+Dynamic SQL을 이용하여 이런 문제가 어떻게 해결되는지 테스트 해보자.  
+
+**board-mapping.xml**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="BoardDAO">
+
+	<resultMap id="boardResult" type="board">
+		<id property="seq" column="SEQ" />
+		<result property="title" column="TITLE" />
+		<result property="writer" column="WRITER" />
+		<result property="content" column="CONTENT" />
+		<result property="regDate" column="REGDATE" />
+		<result property="cnt" column="CNT" />
+	</resultMap>
+	
+	<insert id="insertBoard" parameterType="board">
+		<![CDATA[
+		INSERT INTO BOARD(SEQ, TITLE, WRITER, CONTENT)
+		VALUES((SELECT NVL(MAX(SEQ), 0) + 1 FROM BOARD),
+		#{title}, #{writer}, #{content})
+		]]>
+	</insert>
+	
+	<update id="updateBoard">
+		<![CDATA[
+		UPDATE BOARD SET
+		TITLE = #{title},
+		CONTENT = #{content}
+		WHERE SEQ = #{seq}
+		]]>
+	</update>
+	
+	<delete id="deleteBoard">
+		<![CDATA[
+		DELETE BOARD
+		WHERE SEQ = #{seq}
+		]]>
+	</delete>
+	
+	<select id="getBoard" resultType="board">
+		<![CDATA[
+		SELECT *
+		FROM BOARD
+		WHERE SEQ = #{seq}
+		]]>
+	</select>
+	
+	<select id="getBoardList" resultMap="boardResult">
+		<![CDATA[
+		SELECT *
+		FROM BOARD
+		WHERE 1 = 1 
+		<if test="searchCondition == 'TITLE'">
+			AND TITLE LIKE '%'||#{searchKeyword}||'%'
+		</if>
+		<if test="searchCondition == 'CONTENT'">
+			AND CONTENT LIKE '%'||#{searchKeyword}||'%'
+		</if>
+		ORDER BY SEQ DESC
+		]]>
+	</select>
+<!-- 	
+	<select id="getBoardList_T" resultMap="boardResult">
+		<![CDATA[
+		SELECT *
+		FROM BOARD
+		WHERE TITLE LIKE '%'||#{searchKeyword}||'%'
+		ORDER BY SEQ DESC
+		]]>
+	</select>
+	
+	<select id="getBoardList_C" resultMap="boardResult">
+		<![CDATA[
+		SELECT *
+		FROM BOARD
+		WHERE CONTENT LIKE '%'||#{searchKeyword}||'%'
+		ORDER BY SEQ DESC
+		]]>
+	</select>
+ -->	
+</mapper>
+```
+수정된 SQL 구문을 보면 ```<if>```라는 동적 요소를 사용하여 조건에 따른 분기 처리를 하고 있다.  
+만약 searchCondition 변숫값이 ```TITLE```을 가지고 있으면 제목 검색에 해당하는 조건이 추가되고  
+```CONTENT```라는 값을 가지고 있으면 내용 검색에 해당하는 조건이 추가되어 실행된다.   
+이렇게 동적 엘리먼트를 이용하여 SQL을 처리할 수 있으므로 검색과 관련된 쿼리는 하나만 있으면 된다.    
+    
+**BoardDAOMybatis**
+```
+package com.springbook.biz.board.impl;
+
+import java.util.List;
+
+import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import com.springbook.biz.board.BoardVO;
+
+@Repository
+public class BoardDAOMybatis{
+	
+	@Autowired
+	private SqlSessionTemplate mybatis;
+
+	public void insertBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� insertBoard() ��� ó��");
+		mybatis.insert("BoardDAO.insertBoard", vo);
+	}
+
+	public void updateBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� updateBoard() ��� ó��");
+		mybatis.update("BoardDAO.updateBoard", vo);
+	}
+
+	public void deleteBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� deleteBoard() ��� ó��");
+		mybatis.delete("BoardDAO.deleteBoard", vo);
+	}
+
+	public BoardVO getBoard(BoardVO vo) {
+		System.out.println("===> Mybatis�� getBoard() ��� ó��");
+		return (BoardVO) mybatis.selectOne("BoardDAO.getBoard", vo);
+	}
+
+	public List<BoardVO> getBoardList(BoardVO vo) {
+		System.out.println("===> Mybatis�� getBoardList() ��� ó��");
+		return mybatis.selectList("BoardDAO.getBoardList", vo);
+	}
+	/*
+	  	public List<BoardVO> getBoardList(BoardVO vo) {
+		System.out.println("===> Mybatis�� getBoardList() ��� ó��");
+		if(vo.getSearchCondition().equals("TITLE")) {
+			return mybatis.selectList("BoardDAO.getBoardList_T", vo);
+		} else if(vo.getSearchCondition().equals("CONTENT")) {
+			return mybatis.selectList("BoardDAO.getBoardList_C", vo);
+		} 
+		return null;
+	}
+	 */
+}
+```
+그리고 당연히 이 SQL을 이용하여  
+검색 관련 DB 연동 로직을 처리하는 BoardDAOMybatis 클래스의 메소드 역시 원래의 코드를 유지할 수 있다.   
+이 코드는 새로운 검색 조건이 추가된다 하더라도 수정할 필요가 없다.  
+따라서 유지보수는 좀 더 편해질 것이다.  
+
