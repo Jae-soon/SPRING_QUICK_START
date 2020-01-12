@@ -270,14 +270,46 @@ JPA의 기본은 엔티티 클래스를 기반으로 관계형 데이터베이�
 사실 엔티티 매핑에서 가장 복잡하고 중요한 설정은 연관 매핑 설정이다.    
 연관 매핑은 JPA에서 가장 복잡하고 중요한 개념이지만 전문적인 지식을 요구하므로      
 이번 시간에는 가장 기본적인 엔티티 매핑 정보만 확인하도록 하자     
+   
+## 2.1. @Entity, @Id
+@Entity는 특정 클래스를 JPA가 관리하는 엔티티 클래스로 인식하는 가장 중요한 어노테이션이다.  
+엔티티 클래스 선언부 위에 @Entity를 붙이면 JPA가 이 클래스를 엔티티 클래스로 인식하여 관련된 테이블과 자동으로 매핑 처리한다.    
 
+엔티티 클래스와 매핑되는 테이블은 각 ROW를 식별하기 위한 PK 칼럼을 가지고 있다.  
+이런 테이블과 매핑되는 엔티티 클래스 역시 PK 칼럼과 매핑될 변수를 가지고 있어야 하며,  
+이런 변수를 식별자 필드라고 한다.   
+이 식별자 필드는 엔티티 클래스라면 무조건 가지고 있어야 하며 @Id를 이용하여 선언한다.  
 
-
-## 2.1. 소 주제
-### 2.1.1. 내용1
+**Board 일부**
 ```
-내용1
-```   
+package com.springbook.biz.board;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+
+@Entity
+@Table(name = "BOARD")
+public class Board{
+	@Id
+	@GeneratedValue
+	private int seq;
+	private String title;
+	private String writer;
+	private String content;
+	@Temporal(TemporalType.DATE)
+	private Date regDate = new Date();
+	private int cnt;
+```
+@Entity가 추가된 Board 클래스는 BOARD 테이블과 자동으로 매핑된다.  
+만약 Board 클래스와 다른 테이블을 매핑하려면 @Table을 사용해야 한다.  
+
 
 ***
 # 3. 대주제
