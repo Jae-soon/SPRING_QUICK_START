@@ -308,13 +308,324 @@ public class Board{
 	private int cnt;
 ```
 @Entity가 추가된 Board 클래스는 BOARD 테이블과 자동으로 매핑된다.  
-만약 Board 클래스와 다른 테이블을 매핑하려면 @Table을 사용해야 한다.  
+만약 Board 클래스와 다른 테이블을 매핑하려면 @Table을 사용해야 한다.   
+     
+## 2.2. @Table
+엔티티 클래스를 정의할 때 엔티티 클래스와 매핑되는 테이블 이름을 별도로 지정하지 않으면  
+엔티티 클래스 이름과 같은 이름의 테이블이 자동으로 매핑된다.   
+  
+그러나 실제로는 엔티티 클래스 이름과 테이블 이름이 다른 경우가 발생하는데,   
+이때 @Table을 이용하여 매핑되는 테이블 이름을 지정하면 된다.  
+  
+@Table은 다양한 속성을 가질 수 있으며, 중요한 몇 가지 속성을 정리해보면 아래와 같다.   
+    
+[사진]     
+      
+```
+name 			: 매핑될 테이블 이름을 지정한다.  
+catalog 		: 데이터베이스 카탈로그를 지정한다.  
+schema			: 데이터베이스 스키마를 지정한다.  
+uniqueContraints	: 결합 unique 제약조건을 지정하며, 여러 개의 칼럼이 결합되어 유일성을 보장해야 하는 경우 사용한다.  
+```
+다음은 Board 클래스에 @Table을 적용해 본 것이다.  
+설명을 위한 예 이므로 실제 Board 클래스에 선언하지 말자  
+
+**예시 Board**
+```
+import javax.persistence.Table;
+
+@Entity
+@Table(name="E_BOARD", uniqueConstraints={@UniqueConstraint(columnNames={"SEQ","WRITER"})})
+public class Board implements Serializable{
+	@Id
+	private int seq;
+	private String title;
+}
+```
+위 설정은 Board라는 엔티티클래스가 E_BOARD 테이블과 매핑된다.  
+그리고 SEQ와 WRITER 두 개의 컬럼을 결합했을 때 유일한 값만 유지해야 한다.  
+       
+## 2.3. @Column
+@Column은 엔티티 클래스의 변수와 테이블의 칼럼을 매핑할 때 사용한다.  
+일반적으로 엔티티 클래스의 변수 이름과 칼럼 이름이 다를 때 사용하며,   
+생략하면 기본으로 변수 이름과 칼럼 이름을 동일하게 매핑한다.   
+즉, title 변수는 TITLE 칼럼과 자동으로 매핑된다.     
+
+@Column이 지원하는 속성은 매우 다양하지만,   
+일반적으로 칼럼 이름 지정에 사용하는 name과 Null 데이터 입력을 방지하는 nullable만 사용한다.  
+  
+다음 표는 @Column에 사용할 수 있는 다양한 속성들을 정리한 것이다.  
+  
+[사진]  
+  
+```
+name 		 : 칼럼 이름을 지정한다.(생략시 변수명과 동일하게 매핑) 
+unique		 : unique 제약조건을 추가한다. (기본은 false)
+nullable	 : null 상태 허용 여부를 지정한다 (기본은 false)
+insertable	 : 입력 SQL 명령어를 자동으로 생성할 때 이 칼럼을 포함할 것인지를 지정한다. (기본은 true)  
+updatable	 : 수정 SQL 명령어를 자동으로 생성할 때 이 칼럼을 포함할 것인지를 지정한다. (기본은 true)
+columnDefinition : 이 칼럼에 대한 DDL 문을 직접 설정한다.  
+length		 : 문자열 타입의 칼럼 길이를 지정한다. (기본 255)
+precision	 : 숫자 타입의 전체 자릿수를 지정한다. (기본 0)
+scale		 : 숫자 타입의 소수점 자릿수를 지정한다. (기본 0)
+```
+다음은 @Column을 Board 클래스에 적용해본 것이다.  
+설명을 위한 예이므로 실제 Board 클래스에 선언하지는 않는다.   
+  
+**예시 Board**
+```
+package com.springbook.biz.board;
+
+import java.util.Date;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 
+@Entity
+@Table(name = "E_BOARD")
+public class Board{
+	@Id
+	@GeneratedValue
+	private int seq;
+	@Column(name="BOARD_TITLE", nullable=false, length=30)
+	private String title;
+	@Column(name="BOARD_WRITER", updatable=false)
+	private String writer;
+	@Column(name="BOARD_CONTENT", nullable=false)
+	private String content;
+	@Column(name="BOARD_REG_DATE")
+	@Temporal(TemporalType.DATE)
+	private Date regDate = new Date();
+	@Column(name="BOARD_CNT")
+	private int cnt;
+```
+우선 Board 클래스의 대부분 변수 이름과 BOARD 테이블의 컬럼 이름이 일치하지 않아서 name 속성을 사용했다.     
+그리고 title과 content는 Null을 허용하지 않도록 nullable 속성을 사용했으며,     
+이 중에서 title에 저장되는 문자 데이터의 길이는 30으로 제한했다.     
+그리고 작성자에 해당하는 writer는 수정 SQL 구문을 생성할 때 제외하도록 설정했다.      
+    
+## 2.4. @GeneratedValue
+@GeneratedValue는 @Id로 지정된 식별자 필드에 PK값을 생성하여 저장할 때 사용한다.    
+   
+**예시 Board**
+```
+package com.springbook.biz.board;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+
+@Entity
+@Table(name = "BOARD")
+public class Board{
+	@Id
+	@GeneratedValue
+	private int seq;
+```
+@GeneratedValue는 다음과 같은 속성을 설정할 수 있다.  
+  
+[사진]  
+  
+```
+strategy  : 자동 생성 유형을 지정한다 (GeneratorType 지정)
+generator : 이미 생성된 Generator 이름을 지정한다.
+```
+이 중에서 strategy 는 PK 값 생성 전력을 지정하는 속성으로 매우 중요하다.  
+PK 값 생성 전략은 TABLE, SEQUENCE, IDENTITY, AUTO 4가지가 있는데 각각의 의미는 다음과 같다.  
+  
+```
+TABLE 		: Hibernate가 데이터베이스 테이블을 사용하여 PK 값을 생성한다. 따라서 별도의 PK 값 생성을 위한 별도의 테이블 설정이 필요하다  
+SEQUENCE	: Sequence Object를 이용하여 PK값을 생성한다. 이 전략은 오라클과 같은 Sequence를 지원하는 데이터베이스에서만 사용할 수있다.   
+IDENTITY 	: auto_increment나 IDENTITY를 이용하여 PK 값을 생성한다. 일반적으로 MySQL 같은 데이터베이스를 이용할 때 사용한다.
+AUTO		: Hibernate가 사용중인 데이터베이스에 맞게 자동으로 PK 값을 생성한다. 아무런 설정을 하지 않으면 기본값으로 사용한다.
+```
+    
+## 2.5. @Transient  
+엔티티 클래스의 변수들은 대부분 테이블의 컬럼과 매핑된다.  
+그러나 몇몇 변수는 매핑되는 칼럼이 없거나 아예 매핑에서 제외해야만 하는 경우도 있다.  
+@Transient는 엔티티 클래스 내의 특정 변수를 영속 필드에서 제외할 때 사용한다.  
+```
+package com.springbook.biz.board;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+
+@Entity
+@Table(name = "BOARD")
+public class BoardVO {
+~ 중략 ~
+	@Transient
+	private String searchCondition;
+	@Transient
+	private String searchKeyword;
+	@Transient
+	private MultipartFile uploadFile;
+```
+Board 클래스의 searchCondition, searchKeyword, uploadFile 변수는  
+BOARD 테이블에서 매핑되는 칼럼이 없을뿐 아니라    
+각 변수에 저장된 값을 테이블에 저장할 필요도 없다.    
+하지만 아무런 설정을 하지 않으면 JPA는 자동으로 변수에 해당하는 컬럼을 찾아 매핑 처리할 것이다.  
+따라서 @Transient를 설정하여 해당 변수를 매핑 대상에서 제외해야 한다.  
+    
+## 2.6. @Temporal    
+@Temporal은 java.util.Date 타입의 날짜 데이터를 매핑할 때 사용한다.  
+이때 TemporalType을 이용하면 출력되는 날짜의 형식을 지정할 수 있다.  
+    
+TemporalType.DATE는 날짜 정보만 출력하고, TemporalType.TIME은 시간정보만 출력한다.  
+TemporalType.TIMESTAMP는 날짜와 시간 정보를 모두 출력한다.  
+   
+```
+package com.springbook.biz.board;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+
+@Entity
+@Table(name = "BOARD")
+public class Board{
+	@Id
+	@GeneratedValue
+	private int seq;
+	private String title;
+	private String writer;
+	private String content;
+	@Temporal(TemporalType.DATE)
+	private Date regDate = new Date();
+	private int cnt;
+```
+     
 ***
-# 3. 대주제
-> 인용
-## 3.1. 소 주제
+# 3. JPA API
+## 3.1. JPA API 구조  
+엔티티 클래스에 기본적인 매핑을 설정했으면 
+이제 JPA에서 지원하는 API를 이용하여 데이터베이스 연동을 처리할 수 있다.    
+  
+애플리케이션에서 JPA를 이용하여 CRUD 기능을 처리하려면 엔티티 관리자 객체를 사용해야 한다.    
+그런데 이 EntityManager 객체는 EntityFactory로부터 얻어낸다.  
+따라서 JPA를 이용한 애플리케이션의 시작은 EntityManger 객체 생성이라고 할 수 있다.  
+
+다음 그림은 EntityManager를 생성하기 위한 과정을 표현한 것이다.  
+  
+[그림]  
+  
+1. Persistence 클래스를 이용하여 영속성 유닛 정보가 저장된 JPA 메인 환경설정 파일을 로딩한다.  
+(persistence.xml)  
+2. 이 설정 저보를 바탕을 EntityManager를 생성하는 공장 기능의 EntityManagerFactory 객체를 생성한다.  
+3. 이제 EntityManagerFactory로부터 필요한 EntityManager를 얻어서 사용하면 된다.  
+  
+EntityManagerFactory 객체를 생성할 때는 영속성 유닛이 필요하므로  
+persistence.xml 파일에 설정한 영속성 유닛 이름을 지정하여 EntityManagerFactory 객체를 생성한다.   
+  
+윗그림에서는 마치 Persistence가 persistence.xml 파일을 직접 읽어 들이는 것으로 표현했지만,  
+실제로는 JPA가 자동으로 META-INF 폴더에 있는 persistence.xml 파일을 로딩한다.    
+따라서 XML 파일을 로딩하는 과정은 코드에서 표현되지 않고, 다만 영속성 유닛 이름을 지정하여 해당 설정을 인지할 수 있다. 
+
+**BoardServiceClient 일부**
+```
+		// EntityManager 생성
+		EntityManagerFactory emf = Persistence.createEntityManagerFactory("JPAProject");
+		EntityManager em = emf.createEntityManager();
+```
+EntityManagerFactory 객체로부터 EntityManager 객체를 얻었으면,     
+EntityManager를 통해서 EntityTransaction 객체를 얻을 수 있다.     
+이 EntityTransaction을 통해 트랜잭션을 제어할 수 있다.    
+```
+		// Transaction 생성
+		EntityTransaction tx = em.getTransaction();
+```
+아래 표는 EntityManager 객체가 제공하는 CRUD 기능의 메소드들이다.  
+  
+[사진]  
+   
+```
+persist(Object entity) 					: 엔티티를 영속화 한다.(INSERT)
+merge(Object entity) 					: 준영속 상태의 엔티티를 영속화한다.(UPDATE)
+remove(Object entity) 					: 영속 상태의 엔티티를 제거한다.(DELETE)
+find(Class<T> entityClass, Object entity) 		: 하나의 엔티티를 검색한다.(SELECT ONE)
+createQuery(String qlString, Class<T> resultClass) 	: JPQL에 해당하는 엔티티 목록을 검색한다.(SELECT LIST)
+```
+  
+## 3.2. JPA API 사용  
+이제는 API에서 제공하는 API를 실제로 사용하는 과정을 살펴보자 (BoardServiceClient)  
+   
+**BoardServiceClient 일부**   
+```
+			// Transaction 시작
+			tx.begin();
+
+			Board board = new Board();
+			board.setTitle("JPA 제목");
+			board.setWriter("관리자");
+			board.setContent("JPA 글 등록 잘되네요");
+
+			// 글 등록
+			em.persist(board);
+```
+먼저 트랜잭션을 시작하고 엔티티 클래스로 등록된 Board 객체를 생성한 다음, 글 등록에 필요한 값들을 저장한다.       
+여기서 중요한 것은 단순히 엔티티 객체를 생성하고 여기에 값을 저장하고 있다고 해서    
+이 객체가 BOARD 테이블과 자동으로 매핑되지는 않는다.   
+
+반드시 EntityManager의 persist() 메소드로 엔티티 객체를 영속화해야만 INSERT 작업이 처리된다.  
+  
+게시글이 등록되었으면 글 목록을 조회하는데,    
+이때는 JPQL이라는 JPA 고유의 쿼리 구문을 사용해야한다.     
+**즉 글 목록 조회를 원하면 쿼리를 사용하는 것이다.**    
+```
+			// 글 목록 조회
+			String jpql = "select b from Board b order by b.seq desc";
+			List<Board> boardList = em.createQuery(jpql, Board.class).getResultList();
+
+			for (Board brd : boardList) {
+				System.out.println("--->" + brd.toString());
+			}
+			// Transaction commit
+			tx.commit();
+```
+JPQL은 기존에 사용하던 SQL과 거의 유사한 문법을 제공하므로 해석하는데 별 어려움이 없다.  
+하지만 **검색 대상이 테이블이 아닌 엔티티 객체라서 작성하는데 주의가 필요하다**  
+JPQL을 작성하고 실행하면 하이버네이트 같은 JPA 구현체가,    
+JPQL을 연동되는 DBMS에 맞게 적절한 SELECT 명령어로 변환한다.   
+  
+데이터베이스에서 연동 처리 중 예외가 발생한다면 catch 블록에서 트랜잭션을 롤백 처리하면 되고  
+finally 블록에서 반드시 EntityManager 를 close() 메소드를 이용하여 닫아야 한다.  
+그리고 프로그램이 종료되기 전에 EntityManagerFactory 객체도 close() 메소드로 닫아야 한다.  
+```
+		} catch (Exception e) {
+			e.printStackTrace();
+			tx.rollback();
+		} finally {
+			em.close();
+		}
+		emf.close();
+	}
+```
+
 ### 3.1.1. 내용1
 ```
 내용1
