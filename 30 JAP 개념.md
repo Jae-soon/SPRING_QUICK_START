@@ -63,7 +63,19 @@ Artifact Id : JPAProject
 Version     : 0.0.1-SNAPSHOT
 Package     : com.springbook.biz.board
 ```
-
+6. 프로젝트가 생성되었을 때 JRE System Library 버전이 ```[J2SE-1.5]```로 기본 설정되어 있다.    
+이를 수정하기 위해 JPAProject에서 마우스 오른쪽 버튼을 클릭하여 맨 아래에 있는 ```[Properties]```를 선택한다.  
+7. 왼쪽에 ```[Project Facets]``` 탭을 선택하고 ```Convert to faceted form``` 링크를 클릭한다.  
+8. 우선 아래에 있는 ```JPA``` 항목을 체크한다.    
+그리고 오른쪽에 ```[Runtime]``` 탭에서 ```jdk1.8.0_73```을 체크한 후에    
+```<Apply>```,```<OK>``` 버튼을 차례로 클릭하여 설정을 마무리한다.    
+9. 그런데 ```<Apply>``` 버튼이 여전히 비활성화 되어있고 ```<Apply>``` 버튼 위에 문장이   
+```Further configuration required```로 출력된다면 우선 해당 링크를 클릭한다.    
+10. JPA Facet 창이 열리면 JPA Implementation 항목에서  
+Type을 ```Disable Library Configuration```으로 선택하고 ```<OK>``` 버튼을 클릭한다.  
+11. 이 과정을 거치면 ```<Apply>```와 ```<OK>``` 버튼이 활성화 된다.   
+이렇게 Maven Project가 JPA 프로젝트로 변경되었으면 ```src/main/java``` 소스 폴더에   
+META-INF 폴더와 그 아래에 JPA 환경 설정 파일인 persistence.xml이 생성된 것을 확인할 수 있다.  
 
 
 ## 2.1. 소 주제
