@@ -247,9 +247,156 @@ LocalContainerEntityManagerFactoryBean 클래스를 ```<bean>``` 등록할 때
 ~ 생략 ~ 
 ```
 
-
-## 3.1. 소 주제
-### 3.1.1. 내용1
+***
+# 4. 트랜잭션 설정 수정  
+우리는 앞에서 트랜잭션 관리를 스프링 컨테이너에 위임할 때,   
+DataSourceTransactionManager 클래스를 ```<bean>``` 사용했었다.  
+DataSourceTransactionManager 는 SpringJDBC나 Mybatis를 이용하여 DB 연동을 처리할 때 사용하는 트랜잭션 관리자였다.  
+  
+하지만 이제는 JPA를 이용해서 DB 연동을 처리하고 있으므로 트랜잭션 관리자를 JpaTransactionManager로 변경해야 한다.  
+  
+**applicationContext.xml**
 ```
-내용1
+~생략~
+	<!-- Transaction 실행 -->
+	<bean id="txManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory"></property>
+	</bean>
+	
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true"/>
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<aop:config>
+		<aop:pointcut expression="execution(* com.springbook.biz..*(..))" id="txPointcut"/>
+		<aop:advisor pointcut-ref="txPointcut" advice-ref="txAdvice"/>
+	</aop:config>
+~생략~
+```
+기존에 트랜잭션 설정에서 트랜잭션 관리 어드바이스가 참조하는 트랜잭션 매니져 클래스를  
+DataSourceTransactionManager에서 JpaTransactionManager로만 변경한다.   
+그리고 JpaTransactionManager가 LocalContainerEntityManagerFactoryBean 객체를 참조하도록 의존성 주입을 설정하면 끝난다.  
+
+***
+# 5. DAO 클래스 구현
+스프링과 JPA 연동에 필요한 모든 설정을 마무리했으면 이제 JPA 기반의 DAO 클래스만 구현하면 된다.   
+JPA를 이용해서 DAO 클래스를 구현할 때는 EntityManager 객체를 사용해야 하는데  
+JPAProject에서는 EntityManagerFactory로부터 EntityManager 객체를 직접 얻어냈었다.  
+  
+하지만 JPA를 단독으로 사용하지 않고 스프링과 연동할 때는  
+EntityManagerFactory 에서 EntityManager를 직접 생성하는 것이 아니라  
+스프링 컨테이너가 제공하는 EntityManager를 사용해야만 한다.  
+
+다음처럼 EntityManager 객체를 이용하여 BoardDAOJPA 클래스를 추가로 구현해보도록 하자  
+  
+**BoardDAOJPA**
+```
+package com.springbook.biz.board.impl;
+
+import java.util.List;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import org.springframework.stereotype.Repository;
+
+import com.springbook.biz.board.BoardVO;
+
+@Repository
+public class BoardDAOJPA {
+	@PersistenceContext
+	private EntityManager em;
+
+	public void insertBoard(BoardVO vo) {
+		System.out.println("===> JPA로 insertBoard() 기능처리");
+		em.persist(vo);
+	}
+
+	public void updateBoard(BoardVO vo) {
+		System.out.println("===> JPA로 updateBoard() 기능처리");
+		em.merge(vo);
+	}
+
+	public void deleteBoard(BoardVO vo) {
+		System.out.println("===> JPA로 deleteBoard() 기능처리");
+		em.remove(em.find(BoardVO.class, vo.getSeq()));
+	}
+
+	public BoardVO getBoard(BoardVO vo) {
+		System.out.println("===> JPA로 getBoard() 기능처리");
+		return (BoardVO) em.find(BoardVO.class, vo.getSeq());
+	}
+
+	public List<BoardVO> getBoardList(BoardVO vo) {
+
+		System.out.println("===> JPA로 getBoardList() 기능처리");
+		return em.createQuery("from BoardVO b order by b.seq desc").getResultList();
+	}
+
+}
+```
+@PersistenceContext 는 스프링 컨테이너가 관리하는 EntityManager 객체를 의존성 주입할 때 사용하는 어노테이션이다.   
+앞에서 LocalContainerEntityManagerFactorybean 클래스를 ```<bean>``` 등록했던 것을 기억할 것이다.    
+스프링 컨테이너는 이 객체를 이용하여     
+@PersistenceContext 가 설정된 EntityManager 타입의 변수에 EntityManager 객체를 의존성 주입해준다     
+그리고 이렇게 컨테이너로부터 EntityManager 객체를 주입받아서 사용해야만  
+컨테이너가 제공하는 트랜잭션 관리를 비롯한 다양한 기능을 사용할 수 있다.   
+  
+***
+# 6. BoardServiceImpl 클래스 수정 및 테스트 
+JPA를 이용하는 DAO 클래스를 구현했으면 이제 마지막으로 BoardServiceImpl 클래스에서   
+추가된 BoardDAOJPA 클래스로 DB 연동을 처리하면 된다.   
+   
+**BoardServiceImpl**   
+```
+package com.springbook.biz.board.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.springbook.biz.board.BoardVO;
+
+
+@Service("boardService")
+public class BoardServiceImpl implements BoardService {
+	
+	@Autowired
+	private BoardDAOJPA boardDAO;
+
+	public void insertBoard(BoardVO vo) {
+		boardDAO.insertBoard(vo); 
+	}
+
+	public void updateBoard(BoardVO vo) {
+		boardDAO.updateBoard(vo);
+	}
+
+	public void deleteBoard(BoardVO vo) {
+		boardDAO.deleteBoard(vo);
+	}
+
+	public BoardVO getBoard(BoardVO vo) {
+		return boardDAO.getBoard(vo);
+	}
+
+	public List<BoardVO> getBoardList(BoardVO vo) {
+		return boardDAO.getBoardList(vo);
+	}
+}
+```
+지금까지 수정한 모든 파일을 저장하고 게시판 프로그램을 실행시켜본다.  
+실행하기전에 H2 데이터베이스가 구동되어 있는지 확인하고, 톰캣 서버도 재구동한다.  
+톰캣 서버가 재구동 되면 다음처럼 시퀀스와 테이블이 삭제되고 다시 만들어질 것이다.  
+  
+ ```
+ ```
+ 이제 새 글을 등록하면 시퀀스를 통해 입력할 게시글의 번호를 추출하고 사용자가 입력한 글이 BOARD 테이블에 등록될 것이다.  
+ 그리고 등록될 글 목록이 화면에 출력되는데,  
+ 이 과정에서 하이버네이트가 생성한 다양한 SQL 구문을 콘솔을 통해 확인해볼 수 있다.  
+```
 ```
