@@ -41,10 +41,10 @@ JPA 프로젝트는 반드시 영속성 유닛 설정 정보가 저장된 persis
 ```
 <?xml version="1.0" encoding="UTF-8"?>
 <persistence version="2.1" xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
-	<persistence-unit name="JPAProject">
-		<class>com.springbook.biz.board.Board</class>
+	<persistence-unit name="springboard">
+		<class>com.springbook.biz.board.BoardVO</class>
 		<properties>
-			<!-- 필수 속성 -->
+			<!-- 필수 속성 -->	
 			<property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
 			
 			<!-- 옵션 -->
