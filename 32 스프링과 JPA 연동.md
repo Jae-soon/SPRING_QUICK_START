@@ -394,9 +394,44 @@ public class BoardServiceImpl implements BoardService {
 톰캣 서버가 재구동 되면 다음처럼 시퀀스와 테이블이 삭제되고 다시 만들어질 것이다.  
   
  ```
+ Hibernate: 
+    drop table if exists BOARD
+Hibernate: 
+    drop table if exists hibernate_sequence
+Hibernate: 
+    create table BOARD (
+        seq integer not null,
+        cnt integer not null,
+        content varchar(255),
+        regDate datetime,
+        title varchar(255),
+        writer varchar(255),
+        primary key (seq)
+    )
+Hibernate: 
+    create table hibernate_sequence (
+        next_val bigint
+    )
+Hibernate: 
+    insert into hibernate_sequence values ( 1 )
+INFO : org.springframework.web.context.ContextLoader - Root WebApplicationContext: initialization completed in 8028 ms
  ```
  이제 새 글을 등록하면 시퀀스를 통해 입력할 게시글의 번호를 추출하고 사용자가 입력한 글이 BOARD 테이블에 등록될 것이다.  
  그리고 등록될 글 목록이 화면에 출력되는데,  
  이 과정에서 하이버네이트가 생성한 다양한 SQL 구문을 콘솔을 통해 확인해볼 수 있다.  
+   
 ```
+===> JPA로 getBoardList() 기능처리
+Hibernate: 
+    select
+        boardvo0_.seq as seq1_0_,
+        boardvo0_.cnt as cnt2_0_,
+        boardvo0_.content as content3_0_,
+        boardvo0_.regDate as regDate4_0_,
+        boardvo0_.title as title5_0_,
+        boardvo0_.writer as writer6_0_ 
+    from
+        BOARD boardvo0_ 
+    order by
+        boardvo0_.seq desc
 ```
