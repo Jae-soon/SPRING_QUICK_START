@@ -45,10 +45,6 @@ JPA 프로젝트는 반드시 영속성 유닛 설정 정보가 저장된 persis
 		<class>com.springbook.biz.board.Board</class>
 		<properties>
 			<!-- 필수 속성 -->
-			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>
-			<property name="javax.persistence.jdbc.user" value="sa"/>
-			<property name="javax.persistence.jdbc.password" value=""/>
-			<property name="javax.persistence.jdbc.url" value="jdbc:h2:tcp://localhost/~/test"/>	
 			<property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
 			
 			<!-- 옵션 -->
@@ -61,30 +57,197 @@ JPA 프로젝트는 반드시 영속성 유닛 설정 정보가 저장된 persis
 	</persistence-unit>
 </persistence>
 ```
+위 설정을 보면 DB 커넥션 관련 설정이 모두 삭제되었다.    
+JPA를 스프링과 연동하면 커넥션 정보는 스프링에서 제공하는 데이터소스를 이용하면 된다   
+
+***
+# 2. 엔티티 매핑 설정
+기존에 사용하던 BoardVO 클래스를 열어서 JPA가 제공하는 어노테이션으로 엔티티 매핑을 설정한다.  
+그리고 이전에 SpringMVC 학습에서 XML 변환 처리에 사용했던 JAXB2 어노테이션들은 모두 삭제한다.   
   
-## 1.1. 소 주제
-### 1.1.1. 내용1
+**BoardVO**
 ```
-내용1
+package com.springbook.biz.board;
+
+import java.util.Date;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import javax.persistence.Transient;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+@Entity
+@Table(name = "BOARD")
+public class BoardVO {
+	
+	@Id
+	@GeneratedValue
+	private int seq;
+	private String title;
+	private String writer;
+	private String content;
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date regDate;
+	private int cnt;
+	@Transient
+	private String searchCondition;
+	@Transient
+	private String searchKeyword;
+	@Transient
+	private MultipartFile uploadFile;
+
+	public int getSeq() {
+		return seq;
+	}
+
+	public void setSeq(int seq) {
+		this.seq = seq;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public String getWriter() {
+		return writer;
+	}
+
+	public void setWriter(String writer) {
+		this.writer = writer;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	public Date getRegDate() {
+		return regDate;
+	}
+
+	public void setRegDate(Date regDate) {
+		this.regDate = regDate;
+	}
+
+	public int getCnt() {
+		return cnt;
+	}
+
+	public void setCnt(int cnt) {
+		this.cnt = cnt;
+	}
+	
+	@JsonIgnore
+	public String getSearchCondition() {
+		return searchCondition;
+	}
+	
+	public void setSearchCondition(String searchCondition) {
+		this.searchCondition = searchCondition;
+	}
+
+	@JsonIgnore
+	public String getSearchKeyword() {
+		return searchKeyword;
+	}
+
+	public void setSearchKeyword(String searchKeyword) {
+		this.searchKeyword = searchKeyword;
+	}
+
+	@JsonIgnore
+	public MultipartFile getUploadFile() {
+		return uploadFile;
+	}
+
+	public void setUploadFile(MultipartFile uploadFile) {
+		this.uploadFile = uploadFile;
+	}
+
+	@Override
+	public String toString() {
+		return "BoardVO [seq=" + seq + ", title=" + title + ", writer=" + writer + ", content=" + content + ", regDate="
+				+ regDate + ", cnt=" + cnt + "]";
+	}
+}
 ```
-## 1.2. 소 주제
-### 1.2.1. 내용1
+우선 엔티티 클래스 이름과 테이블 이름이 달라서 클래스 위에 @Table을 추가했다.  
+그리고 SEQ 칼럼과 매핑되는 seq 변수에 @Id와 @GeneratedValue를 사용하여 seq 변수를 식별자 필드로 지정함과 동시에  
+시퀀스를 이용하여 자동으로 값이 증가하도록 했다.  
+   
+또한, regDate 변수에는 시간을 제외한 날짜 정보만 저장되도록 @Temporal을 설정했으며,  
+searchCondition, searchKeyword, uploadFile 세개의 변수에는 @Transient를 설정하여 영속 필드에서 제외했다.  
+   
+***
+# 3. 스프링과 JPA 연동 설정   
+스프링과 JPA를 연동하려면 다음과 같이 2개의 클래스를 스프링 설정 파일에 ```<bean>```등록해야 한다.  
+  
+**applicationContext.xml**
 ```
-내용1
+~ 생략 ~ 
+	<!-- Spring과 JPA 연동설정 -->
+	<bean id="jpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+	
+	<!-- 엔티티 매니저 팩토리 생성  -->
+	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="jpaVendorAdapter" ref="jpaVendorAdapter"></property>
+	</bean>
+~ 생략 ~ 
+```
+스프링과 JPA 연동을 위해 가장 먼저 등록할 클래스는 JpaVendorAdapter이다.   
+JpaVendorAdapter 클래스는 실제로 DB 연동에 사용할 JPA 벤더를 지정할 때 사용하는데,  
+우리는 하이버네이트를 JPA 구현체로 사용하고 있으므로    
+JpaVendorAdapter 클래스로 HibernateJpaVendorAdapter를 ```<bean>``` 등록하면 된다.  
+
+두번째로 등록할 클래스는 EntityManagerFactoryBean이다.    
+우리가 JPA를 이용하여 DAO 클래스를 구현하려면 최종적으로 EntityManager 객체가 필요하다.   
+이 EntityManager 객체를 생성하려면 공장 기능의 클래스인 EntityManagerFactoryBean 클래스를  ```<bean>``` 등록해야 한다.  
+이때 앞에서 설정한 DataSource 와 JpaVendorAdapter 를 의존성 주입하면 된다.   
+  
+LocalContainerEntityManagerFactoryBean 클래스를 ```<bean>``` 등록할 때    
+영속성 유닛 관련된 설정을 같이 처리할 수도 있다.   
+(즉, persistence.xml 말고 applicationContext.xml에 기술해도 된다는 의미)    
+
+**예시 applicationContext.xml**
+```
+~ 생략 ~ 
+	<!-- Spring과 JPA 연동설정 -->
+	<bean id="jpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"></bean>
+	
+	<!-- 엔티티 매니저 팩토리 생성  -->
+	<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="jpaVendorAdapter" ref="jpaVendorAdapter"></property>
+		<property name="packagesToScan" value="com.springbook.biz.board"></property>
+		<property name="jpaProperties"></property>
+	<props>		
+		<prop key="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+		<prop key="hibernate.show_sql" value="true"/>
+		<prop key="hibernate.format_sql" value="true"/>
+		<prop key="hibernate.use_sql_comments" value="false"/>
+		<prop key="hibernate.id.new_generator_mappings" value="true"/>
+		<prop key="hibernate.hbm2ddl.auto" value="create"/>
+	</props>
+	</bean>
+~ 생략 ~ 
 ```
 
-***
-# 2. 대주제
-> 인용
-## 2.1. 소 주제
-### 2.1.1. 내용1
-```
-내용1
-```   
 
-***
-# 3. 대주제
-> 인용
 ## 3.1. 소 주제
 ### 3.1.1. 내용1
 ```
